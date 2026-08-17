@@ -169,7 +169,7 @@
       var snap = state.snapshot
       var dpr = window.devicePixelRatio || 1
       var W = chartCanvas.clientWidth || 640
-      var H = chartCanvas.clientHeight || 248
+      var H = chartCanvas.clientHeight || 240
       chartCanvas.width = Math.round(W * dpr)
       chartCanvas.height = Math.round(H * dpr)
       var ctx = chartCanvas.getContext('2d')
