@@ -53,6 +53,12 @@ export async function main(argv: string[]): Promise<MonitorRuntime> {
   const overrides: Record<string, unknown> = {}
   if (args.port !== undefined) overrides.dashboard = { port: Number(args.port) }
   if (args.host !== undefined) overrides.dashboard = { ...(overrides.dashboard as Record<string, unknown>), host: args.host }
+  // --overrides <json 文件>: 深合并到配置之上(设置页保存后由 host 写入并传入)
+  if (args.overrides !== undefined) {
+    const { readFileSync } = await import('node:fs')
+    const raw = readFileSync(resolveFromRoot(root, args.overrides), 'utf8')
+    Object.assign(overrides, JSON.parse(raw) as Record<string, unknown>)
+  }
 
   const loaded = await loadConfig({ root, configPath: args.config, profile: args.profile, overrides })
   const cfg = loaded.config

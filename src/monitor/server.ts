@@ -145,6 +145,15 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
             sessions: opts.manager.listSummaries().length
           })
         }
+        if (path === '/api/shutdown' && req.method === 'POST') {
+          const address = req.socket.remoteAddress ?? ''
+          if (address !== '127.0.0.1' && address !== '::1' && address !== '::ffff:127.0.0.1') {
+            return json(res, 403, { ok: false, error: 'loopback-only' })
+          }
+          json(res, 200, { ok: true })
+          setTimeout(() => process.exit(0), 150)
+          return
+        }
         if (path === '/api/config' && req.method === 'GET') {
           return json(res, 200, opts.config)
         }

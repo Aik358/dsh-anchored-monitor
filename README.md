@@ -52,6 +52,17 @@ until now.
   above the conversation (drag / resize / remembered). Collapsed, it becomes a
   **rheostat-style bar** showing thinking intensity as a slider position plus a
   rolling log ticker. DeepSeek white/gray/blue palette, dark theme supported.
+- **Zero-setup auto-start** — the host plugin spawns the monitor process when
+  DSH starts (15s watchdog keeps it alive). No manual steps.
+- **Full settings page** — every parameter (window, lexicon, scoring weights,
+  band boundaries, thresholds, cooldowns, hint templates, bootstrap pair, log
+  rotation) is editable in the DSH settings page with explanations and a
+  floating save bar; saving restarts the monitor to apply changes.
+- **In-loop interventions** — the host observes every session's reasoning
+  blocks, pushes them to the monitor, and executes L1/L2/L3 automatically:
+  L1 injects a suggestive hint into the next request, L2 swaps the persona to
+  the 46-char Minimal sentence + `bash`/`str_replace_editor` for the next
+  request, L3 injects restart advice.
 - **Experiment-first** — every lexicon entry, weight, threshold, window, band
   boundary and cooldown lives in YAML (`config/*.yaml`, validated against
   `config/schema.json`). JSONL experiment logs, offline replay and grid-search

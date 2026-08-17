@@ -1,19 +1,27 @@
 /**
  * 开发用: 把插件客户端渲染进一个带 mock 槽位/真实数据的测试页
  * (供 vision_html_screenshot 做视觉验证, 不随 npm 发布)
+ * 用法: node scripts/build-plugin-test.mjs [open|bar|settings]
  */
 import { readFile, writeFile } from 'node:fs/promises'
 
 const DSH = 'C:/Users/JH Z/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/node_modules'
-const mode = process.argv[2] === 'bar' ? 'bar' : 'open'
-const outFile = mode === 'bar' ? 'demo-data/plugin-bar.html' : 'demo-data/plugin-open.html'
-const [react, reactDom, client, overviewRes] = await Promise.all([
+const mode = process.argv[2] === 'bar' ? 'bar' : process.argv[2] === 'settings' ? 'settings' : 'open'
+const outFile = mode === 'bar' ? 'demo-data/plugin-bar.html' : mode === 'settings' ? 'demo-data/plugin-settings.html' : 'demo-data/plugin-open.html'
+const [react, reactDom, client, overviewRes, effectiveRes] = await Promise.all([
   readFile(DSH + '/react/umd/react.production.min.js', 'utf8'),
   readFile(DSH + '/react-dom/umd/react-dom.production.min.js', 'utf8'),
   readFile('lib/client.js', 'utf8'),
-  fetch('http://127.0.0.1:9301/api/overview').then((r) => r.text())
+  fetch('http://127.0.0.1:9301/api/overview').then((r) => r.text()),
+  fetch('http://127.0.0.1:9301/api/config').then((r) => r.text())
 ])
 const embed = overviewRes.replace(/</g, '\\u003c')
+const settingsEmbed = JSON.stringify({
+  ok: true,
+  monitorOnline: true,
+  host: { monitorUrl: 'http://127.0.0.1:9301', enabled: true, autoStart: true, profile: 'demo' },
+  effective: JSON.parse(effectiveRes)
+}).replace(/</g, '\\u003c')
 
 const page = `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><title>plugin test</title>
@@ -46,6 +54,7 @@ const page = `<!doctype html>
     </div>
   </div>
   <div id="host"></div>
+  <div id="settings-host" style="display:none"></div>
   <script>
     window.__ModuleLoader__ = {
       load: function (o) {
@@ -57,19 +66,22 @@ const page = `<!doctype html>
       }
     }
   </script>
-  <script>${react}</script>
-  <script>${reactDom}</script>
+  <script>${react}<\/script>
+  <script>${reactDom}<\/script>
   <script>
     window.__REACT_DOM__ = window.ReactDOM
   </script>
-  <script>${client}</script>
+  <script>${client}<\/script>
   <script>
     var EMBED = ${embed}
+    var SETTINGS_EMBED = ${settingsEmbed}
     window.fetch = function (url) {
+      var u = String(url)
+      var payload = u.indexOf('/settings') >= 0 ? SETTINGS_EMBED : EMBED
       return Promise.resolve({
         ok: true, status: 200,
-        json: function () { return Promise.resolve(EMBED) },
-        text: function () { return Promise.resolve(JSON.stringify(EMBED)) }
+        json: function () { return Promise.resolve(payload) },
+        text: function () { return Promise.resolve(JSON.stringify(payload)) }
       })
     }
     var registrations = []
@@ -88,6 +100,17 @@ const page = `<!doctype html>
         var el = r.reg.elFactory()
         if (r.reg.name === 'shell.overlay') {
           window.__REACT_DOM__.createRoot(document.getElementById('host')).render(el)
+        } else if (r.reg.name === 'settings.section') {
+          document.body.style.overflow = 'auto'
+          document.body.style.height = 'auto'
+          var sh = document.getElementById('settings-host')
+          sh.style.display = 'block'
+          sh.style.cssText = 'background:#f6f8fc;padding:28px 26px 56px'
+          var inner = document.createElement('div')
+          inner.style.maxWidth = '940px'
+          inner.style.margin = '0 auto'
+          sh.appendChild(inner)
+          window.__REACT_DOM__.createRoot(inner).render(el)
         } else {
           window.__REACT_DOM__.createRoot(document.getElementById('side')).render(el)
         }
@@ -104,4 +127,4 @@ const page = `<!doctype html>
 `
 
 await writeFile(outFile, page, 'utf8')
-console.log(outFile, 'written:', page.length, 'bytes | embed overview:', overviewRes.length, 'bytes')
+console.log(outFile, 'written:', page.length, 'bytes')

@@ -232,8 +232,13 @@ window.__ModuleLoader__.load({
           return slots.register({ name: 'shell.overlay', id: 'anchored-monitor', order: 40 }, function () { return h(AmOverlay) })
         })
       } catch (e) { console.warn('[dsh-anchored-monitor] overlay slot failed', e) }
+      try {
+        slots.inject('settings.section', function () {
+          return slots.register({ name: 'settings.section', id: 'anchored-monitor', order: 30, label: TEXTS.title }, function (props) { return h(SettingsPage, { close: props && props.close }) })
+        })
+      } catch (e) { console.warn('[dsh-anchored-monitor] settings slot failed', e) }
       startPolling()
-      console.log('[dsh-anchored-monitor] client ready: sidebar entry + liquid-glass overlay + rheostat bar')
+      console.log('[dsh-anchored-monitor] client ready: sidebar entry + liquid-glass overlay + rheostat bar + settings page')
     }
 
     exports.inject = ['slots', 'sessions']
