@@ -173,6 +173,8 @@ export interface InterventionRule {
 }
 
 export interface InterventionConfig {
+  /** 干预总开关: 关闭=只监控不干预(设置/面板可运行时切换) */
+  enabled?: boolean
   cooldowns: CooldownsConfig
   max_L2_attempts: number
   rules: InterventionRule[]
@@ -275,6 +277,7 @@ export type MonitorEvent =
       status: 'executed' | 'failed' | 'cooldown'
     }
   | { type: 'ack_received'; sessionId: string; timestamp: number; level: InterventionLevel; status: string }
+  | { type: 'intervention_toggle'; timestamp: number; enabled: boolean }
   | { type: 'session_end'; sessionId: string; timestamp: number; reason: string }
 
 /* ==================== 会话公开状态(仪表盘 API) ==================== */

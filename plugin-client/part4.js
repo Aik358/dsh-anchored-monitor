@@ -5,8 +5,8 @@
       '.am-settings{position:relative;--am-blue:#4d6bfe;--am-text:#101828;--am-muted:#667085;--am-faint:#98a2b3;',
       '--am-border:rgba(16,24,40,0.10);--am-border-strong:rgba(16,24,40,0.18);--am-card:#ffffff;--am-bg:#f6f8fc;',
       'font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--am-text)}',
-      'body[data-ds-dark-theme] .am-settings{--am-text:#e8ecf8;--am-muted:#8b96b5;--am-faint:#5b6585;',
-      '--am-border:rgba(148,163,215,0.16);--am-border-strong:rgba(148,163,215,0.28);--am-card:rgba(148,163,215,0.07);--am-bg:rgba(13,17,28,0.35)}',
+      'body[data-ds-dark-theme] .am-settings{--am-text:#ececee;--am-muted:#9a9aa2;--am-faint:#6b6b72;',
+      '--am-border:rgba(148,148,155,0.14);--am-border-strong:rgba(148,148,155,0.26);--am-card:rgba(148,148,155,0.08);--am-bg:rgba(24,24,27,0.4)}',
       '.am-settings *{box-sizing:border-box}',
       '.am-settings{display:flex;flex-direction:column;gap:18px;padding:4px 2px 96px}',
       '.am-set-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;font-size:12.5px;',
@@ -36,7 +36,7 @@
       '.am-set-savebar{position:sticky;bottom:14px;margin-top:6px;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;',
       'border:1px solid var(--am-border-strong);background:rgba(255,255,255,0.85);box-shadow:0 12px 34px rgba(16,24,40,0.14);',
       'backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);z-index:5}',
-      'body[data-ds-dark-theme] .am-set-savebar{background:rgba(17,22,36,0.85)}',
+      'body[data-ds-dark-theme] .am-set-savebar{background:rgba(28,28,31,0.88)}',
       '.am-set-savebar-note{flex:1;font-size:11.5px;color:var(--am-muted);line-height:1.5}',
       '.am-set-save{display:inline-flex;align-items:center;gap:7px;padding:9px 22px;border-radius:10px;border:none;cursor:pointer;',
       'background:linear-gradient(135deg,#4d6bfe,#3b5bdb);color:#fff;font-size:13.5px;font-weight:650;',
@@ -46,7 +46,7 @@
       '.am-set-toast{position:fixed;right:22px;bottom:22px;z-index:2147483100;padding:11px 16px;border-radius:12px;font-size:12.5px;',
       'border:1px solid var(--am-border-strong);background:rgba(255,255,255,0.92);color:var(--am-text);',
       'box-shadow:0 14px 40px rgba(16,24,40,0.2);backdrop-filter:blur(14px);animation:am-toast-in .18s ease}',
-      'body[data-ds-dark-theme] .am-set-toast{background:rgba(17,22,36,0.92)}',
+      'body[data-ds-dark-theme] .am-set-toast{background:rgba(28,28,31,0.92)}',
       '.am-set-toast.ok{border-color:rgba(22,163,74,0.5)}',
       '.am-set-toast.err{border-color:rgba(220,38,38,0.5)}',
       '@keyframes am-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}'
@@ -353,9 +353,10 @@
       values['override.event_source.poll_interval_ms'] = getPath(eff, 'event_source.poll_interval_ms') ?? 50
 
       var status = '<div class="am-set-status"><i class="am-status-dot ' + (setState.monitorOnline ? 'on' : 'off') + '"></i>'
-        + '<span>' + (setState.monitorOnline ? '<b>' + esc(T('监控在线', 'Monitor online')) + '</b>' : '<b>' + esc(T('监控离线', 'Monitor offline')) + '</b>')
+        + '<span style="flex:1">' + (setState.monitorOnline ? '<b>' + esc(T('监控在线', 'Monitor online')) + '</b>' : '<b>' + esc(T('监控离线', 'Monitor offline')) + '</b>')
         + (setState.monitorOnline && eff && eff.version ? ' · v' + esc(eff.version) : '')
-        + ' · ' + esc(String(host.monitorUrl || '')) + '</span></div>'
+        + ' · ' + esc(String(host.monitorUrl || '')) + '</span>'
+        + '<button class="am-btn am-btn-ico" data-am="langbtn" title="' + esc(TEXTS.switchLang) + '">' + (langZh ? 'EN' : '中') + '</button></div>'
 
       var groupsHtml = fieldSpecs().map(function (g) {
         var fieldsHtml = '<div class="am-set-grid">' + g.fields.map(function (f) {
@@ -372,6 +373,13 @@
       if (saveBtn) {
         saveBtn.addEventListener('click', function () {
           void saveSettings(el)
+        })
+      }
+      var langBtn = el.querySelector('[data-am=langbtn]')
+      if (langBtn) {
+        langBtn.addEventListener('click', function () {
+          toggleLang()
+          setTimeout(function () { drawSettings(el) }, 30)
         })
       }
     }

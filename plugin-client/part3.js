@@ -14,6 +14,8 @@
         + '<span class="am-chip" data-am="statuschip">—</span>'
         + (state.sessions.length > 1 ? '<select class="am-select" data-am="session">' + opts + '</select>' : '')
         + '<div class="am-panel-actions">'
+        + '<button class="am-btn am-iv-switch am-iv-on" data-am="ivtoggle" title="' + esc(TEXTS.ivSwitchTitle) + '"></button>'
+        + '<button class="am-btn am-btn-ico" data-am="lang" title="' + esc(TEXTS.switchLang) + '">' + (langZh ? 'EN' : '中') + '</button>'
         + '<button class="am-btn am-btn-ico" data-am="ext" title="' + esc(TEXTS.openDashboard) + '">' + ICON_EXT + '</button>'
         + '<button class="am-btn am-btn-ico" data-am="min" title="' + esc(TEXTS.collapse) + '">' + ICON_MIN + '</button>'
         + '<button class="am-btn am-btn-ico" data-am="close" title="' + esc(TEXTS.close) + '">' + ICON_X + '</button>'
@@ -68,6 +70,11 @@
       } else {
         sc.textContent = TEXTS.monitorOffline
         sc.className = 'am-chip am-status-off'
+      }
+      var ivToggle = panelEl.querySelector('[data-am=ivtoggle]')
+      if (ivToggle) {
+        ivToggle.textContent = state.interventionsEnabled ? TEXTS.ivOn : TEXTS.ivOff
+        ivToggle.className = 'am-btn am-iv-switch ' + (state.interventionsEnabled ? 'am-iv-on' : 'am-iv-off')
       }
       var off = panelEl.querySelector('[data-am=offline]')
       if (state.monitorOnline) {
@@ -168,7 +175,7 @@
       var ctx = chartCanvas.getContext('2d')
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, W, H)
-      ctx.fillStyle = isDark() ? 'rgba(15,18,30,0.4)' : 'rgba(249,250,253,0.55)'
+      ctx.fillStyle = isDark() ? 'rgba(24,24,27,0.45)' : 'rgba(249,250,253,0.55)'
       ctx.fillRect(0, 0, W, H)
       var hist = snap && snap.history ? snap.history : []
       if (!hist.length) {
@@ -188,12 +195,12 @@
       ctx.textAlign = 'right'
       for (var g = 0; g <= 100; g += 25) {
         var gy = yOf(g)
-        ctx.strokeStyle = isDark() ? 'rgba(148,163,215,0.10)' : 'rgba(15,23,42,0.08)'
+        ctx.strokeStyle = isDark() ? 'rgba(148,148,155,0.10)' : 'rgba(15,23,42,0.08)'
         ctx.beginPath()
         ctx.moveTo(pad.l, gy)
         ctx.lineTo(W - pad.r, gy)
         ctx.stroke()
-        ctx.fillStyle = isDark() ? '#5b6585' : '#98a2b3'
+        ctx.fillStyle = isDark() ? '#6b6b72' : '#98a2b3'
         ctx.fillText(String(g), pad.l - 6, gy + 3)
       }
       var stripW = Math.max(1, plotW / n)
@@ -201,8 +208,10 @@
         ctx.fillStyle = hexA(BAND_COLORS[hist[i].band] || BAND_COLORS.unknown, 0.10)
         ctx.fillRect(xOf(i) - stripW / 2, pad.t, stripW, plotH)
       }
-      dashLine(ctx, yOf(state.thresholds.safetyFloor), pad, plotW, isDark() ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.55)', 'floor ' + state.thresholds.safetyFloor)
-      if (snap.baseline && snap.baseline.mean != null) {
+      if (state.triggers && state.triggers.floor) {
+        dashLine(ctx, yOf(state.thresholds.safetyFloor), pad, plotW, isDark() ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.55)', 'floor ' + state.thresholds.safetyFloor)
+      }
+      if (state.triggers && state.triggers.sigma && snap.baseline && snap.baseline.mean != null) {
         dashLine(ctx, yOf(snap.baseline.mean), pad, plotW, isDark() ? 'rgba(232,236,248,0.5)' : 'rgba(77,107,254,0.55)', 'μ ' + snap.baseline.mean.toFixed(0))
       }
       var grad = ctx.createLinearGradient(pad.l, 0, W - pad.r, 0)
@@ -300,6 +309,19 @@
           window.addEventListener('pointerup', onUp)
         })
       }
+      var langBtn = panelEl.querySelector('[data-am=lang]')
+      if (langBtn) langBtn.addEventListener('click', function () { toggleLang() })
+      var ivT = panelEl.querySelector('[data-am=ivtoggle]')
+      if (ivT) ivT.addEventListener('click', function () {
+        var next = !state.interventionsEnabled
+        state.interventionsEnabled = next
+        emit()
+        fetch('/api/anchored-monitor/intervention', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ enabled: next })
+        }).catch(function () {})
+      })
       var ext = panelEl.querySelector('[data-am=ext]')
       if (ext) ext.addEventListener('click', function () { window.open(state.monitorUrl || 'http://127.0.0.1:9301', '_blank', 'noopener') })
       var min = panelEl.querySelector('[data-am=min]')

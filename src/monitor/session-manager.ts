@@ -98,8 +98,28 @@ export function personaRatio(snap: WindowSnapshot, lexicon: CompiledLexicon): nu
 
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
+  private interventionsEnabled: boolean
 
-  constructor(private readonly opts: SessionManagerOptions) {}
+  constructor(private readonly opts: SessionManagerOptions) {
+    this.interventionsEnabled = opts.config.intervention.enabled !== false
+  }
+
+  /** 运行时切换干预总开关(关闭=只监控不干预, 不丢会话状态) */
+  setInterventionsEnabled(enabled: boolean): void {
+    if (this.interventionsEnabled === enabled) return
+    this.interventionsEnabled = enabled
+    this.opts.emit({ type: 'intervention_toggle', timestamp: Date.now(), enabled })
+    if (!enabled) {
+      // 关闭干预时, 挂起状态回到健康(不再累积 critical 升级)
+      for (const state of this.sessions.values()) {
+        if (state.phase !== 'restart') state.phase = 'healthy'
+      }
+    }
+  }
+
+  isInterventionsEnabled(): boolean {
+    return this.interventionsEnabled
+  }
 
   private bandOf(ratio: number | null, baseline: BaselineCalculator): Band {
     if (ratio === null || baseline.mean === null) return 'unknown'
@@ -249,6 +269,13 @@ export class SessionManager {
       l2Attempts: state.l2Attempts,
       config: cfg.intervention
     })
+    if (!this.interventionsEnabled && decision.level !== 'none') {
+      // 干预总开关关闭: 只监控不干预(评分/波段/阈值事件照常, 决策被拦截)
+      decision.level = 'none'
+      decision.nextPhase = 'healthy'
+      decision.resetL2Attempts = true
+      decision.reason = 'interventions disabled'
+    }
     state.lastNormalized = scored.normalized
     if (decision.resetL2Attempts) state.l2Attempts = 0
 

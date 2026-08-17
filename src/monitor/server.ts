@@ -157,6 +157,17 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
         if (path === '/api/config' && req.method === 'GET') {
           return json(res, 200, opts.config)
         }
+        if (path === '/api/intervention' && req.method === 'GET') {
+          return json(res, 200, { ok: true, enabled: opts.manager.isInterventionsEnabled() })
+        }
+        if (path === '/api/intervention' && req.method === 'POST') {
+          const body = await readJsonBody(req, 1024 * 16)
+          if (!body || typeof body.enabled !== 'boolean') {
+            return json(res, 400, { ok: false, error: '需要 { enabled: boolean }' })
+          }
+          opts.manager.setInterventionsEnabled(body.enabled)
+          return json(res, 200, { ok: true, enabled: opts.manager.isInterventionsEnabled() })
+        }
         if (path === '/api/sessions' && req.method === 'GET') {
           return json(res, 200, opts.manager.listSummaries())
         }
@@ -186,9 +197,17 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
               reactMin: opts.config.bands.react_min,
               safetyFloor: opts.config.threshold.safety_floor
             },
+            triggers: {
+              mixed: opts.config.threshold.trigger.some((r) => r.type === 'mixed_band'),
+              react: opts.config.threshold.trigger.some((r) => r.type === 'react_band'),
+              sigma: opts.config.threshold.trigger.some((r) => r.type === 'sigma'),
+              percentile: opts.config.threshold.trigger.some((r) => r.type === 'percentile'),
+              floor: opts.config.threshold.trigger.some((r) => r.type === 'safety_floor')
+            },
             cooldowns: opts.config.intervention.cooldowns,
             maxL2Attempts: opts.config.intervention.max_L2_attempts,
             bootstrapTools: opts.config.intervention.bootstrap_tools,
+            interventionsEnabled: opts.manager.isInterventionsEnabled(),
             sessions: summaries,
             selected: sessionId,
             snapshot,

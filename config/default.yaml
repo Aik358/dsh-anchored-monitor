@@ -78,6 +78,7 @@ threshold:
   safety_floor: 10.0
 
 intervention:
+  enabled: true             # 干预总开关: 关闭=只监控不打断(面板/设置可运行时一键切换, 无需重启)
   cooldowns:
     L1_ms: 30000
     L2_ms: 120000

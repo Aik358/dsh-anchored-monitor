@@ -19,29 +19,49 @@ window.__ModuleLoader__.load({
     var useRef = React.useRef
 
     var LANG_ZH = typeof document !== 'undefined' && document.documentElement && String(document.documentElement.lang || '').toLowerCase().indexOf('zh') === 0
-    var T = function (zh, en) { return LANG_ZH ? zh : en }
+    var LANG_KEY = 'dsh-anchored-monitor.lang'
+    function savedLang() { try { return localStorage.getItem(LANG_KEY) } catch (e) { return null } }
+    var langZh = savedLang() === 'zh' ? true : savedLang() === 'en' ? false : LANG_ZH
+    var T = function (zh, en) { return langZh ? zh : en }
 
-    var TEXTS = {
-      title: T('锚定监控', 'Anchored Monitor'),
-      openDashboard: T('完整仪表盘', 'Full dashboard'),
-      collapse: T('收起', 'Collapse'),
-      close: T('关闭', 'Close'),
-      monitorOnline: T('监控在线', 'Monitor online'),
-      monitorOffline: T('监控离线', 'Monitor offline'),
-      startHint: T('启动: npx anchored-monitor --profile demo', 'Start: npx anchored-monitor --profile demo'),
-      noData: T('等待 reasoning 数据…', 'Waiting for reasoning data…'),
-      band: T('波段', 'Band'),
-      score: T('强度分', 'Score'),
-      windowAgg: T('窗口聚合 P/N/N', 'Window P/N/N'),
-      baseline: T('基线', 'Baseline'),
-      interventions: T('干预', 'Interventions'),
-      events: T('实时事件', 'Live events'),
-      records: T('干预记录', 'Interventions'),
-      samples: T('样本', 'samples'),
-      attempts: T('L2 尝试', 'L2 attempts'),
-      cooldown: T('冷却', 'Cooldown'),
-      of: T('次', 'of')
+    function buildTexts() {
+      return {
+        title: T('锚定监控', 'Anchored Monitor'),
+        openDashboard: T('完整仪表盘', 'Full dashboard'),
+        collapse: T('收起', 'Collapse'),
+        close: T('关闭', 'Close'),
+        monitorOnline: T('监控在线', 'Monitor online'),
+        monitorOffline: T('监控离线', 'Monitor offline'),
+        startHint: T('启动: npx anchored-monitor --profile demo', 'Start: npx anchored-monitor --profile demo'),
+        noData: T('等待 reasoning 数据…', 'Waiting for reasoning data…'),
+        band: T('波段', 'Band'),
+        score: T('强度分', 'Score'),
+        windowAgg: T('窗口聚合 P/N/N', 'Window P/N/N'),
+        baseline: T('基线', 'Baseline'),
+        interventions: T('干预', 'Interventions'),
+        events: T('实时事件', 'Live events'),
+        records: T('干预记录', 'Interventions'),
+        samples: T('样本', 'samples'),
+        attempts: T('L2 尝试', 'L2 attempts'),
+        cooldown: T('冷却', 'Cooldown'),
+        of: T('次', 'of'),
+        switchLang: T('切换语言', 'Switch language'),
+        ivOn: T('干预: 开', 'Intervene: ON'),
+        ivOff: T('干预: 关', 'Intervene: OFF'),
+        ivSwitchTitle: T('切换干预(关闭=只监控不打断)', 'Toggle interventions (off = monitor-only)'),
+        monitorOnly: T('仅监控', 'monitor-only')
+      }
     }
+    var TEXTS = buildTexts()
+    function setLang(zh) {
+      langZh = !!zh
+      try { localStorage.setItem(LANG_KEY, zh ? 'zh' : 'en') } catch (e) {}
+      var fresh = buildTexts()
+      for (var key in fresh) TEXTS[key] = fresh[key]
+      if (typeof removePanel === 'function' && panelEl) removePanel()
+      emit()
+    }
+    function toggleLang() { setLang(!langZh) }
     var BAND_NAMES = { spec: 'spec', mixed: 'mixed', react: 'react', unknown: 'unknown' }
     var PHASE_NAMES = { healthy: 'healthy', warning: 'warning', critical: 'critical', restart: 'restart' }
     var BAND_COLORS = { spec: '#16a34a', mixed: '#d97706', react: '#dc2626', unknown: '#9ca3af' }
@@ -66,6 +86,7 @@ window.__ModuleLoader__.load({
       configHash: '',
       bands: { spec_max: 0.2, react_min: 0.5 },
       thresholds: { specMax: 0.2, reactMin: 0.5, safetyFloor: 10 },
+      triggers: { mixed: true, react: true, sigma: false, percentile: false, floor: false },
       cooldowns: { L1_ms: 0, L2_ms: 0, L3_ms: 0 },
       maxL2Attempts: 5,
       sessions: [],
@@ -120,7 +141,7 @@ window.__ModuleLoader__.load({
     function fmtTime(ts) { var d = new Date(ts); var p = function (n) { return (n < 10 ? '0' : '') + n }; return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) }
 
     // ───────────────────────── 数据轮询 ─────────────────────────
-    var POLL_MS = 1200
+    var POLL_MS = 500
     var pollTimer = null
     async function pollOnce() {
       try {
@@ -134,6 +155,7 @@ window.__ModuleLoader__.load({
           state.configHash = j.configHash || ''
           state.bands = j.bands || state.bands
           state.thresholds = j.thresholds || state.thresholds
+          state.triggers = j.triggers || state.triggers
           state.cooldowns = j.cooldowns || state.cooldowns
           state.maxL2Attempts = j.maxL2Attempts != null ? j.maxL2Attempts : 5
           state.sessions = j.sessions || []

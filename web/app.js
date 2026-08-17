@@ -526,8 +526,8 @@ async function boot() {
   setupChrome()
   await loadSessions()
   connectStream()
-  setInterval(refreshSnapshot, 800)
-  setInterval(loadSessions, 4000)
+  setInterval(refreshSnapshot, 500)
+  setInterval(loadSessions, 2500)
   refreshSnapshot()
 }
 
