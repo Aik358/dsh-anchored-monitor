@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-08-18
+
+### Fixed
+
+- **Critical**: saving the settings page with empty lexicon textareas (e.g. while the monitor was offline and `effective` was missing) overwrote the fingerprint lexicon with empty arrays — no fingerprint matches, so L1/L2/L3 silently stopped firing. An all-empty lexicon now never overrides, and the form falls back to the built-in research defaults when the monitor is offline.
+- Panel header no longer crowds at narrow widths: two-row layout (title + band/status chips on top; session select + action buttons below), title ellipsizes.
+
 ## [0.2.1] - 2026-08-18
 
 ### Fixed / Hardened

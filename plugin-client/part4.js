@@ -216,8 +216,12 @@
           return { term: parts[0], weight: Number.isFinite(w) ? Math.abs(w) : 1, match: 'word' }
         }).filter(Boolean)
       }
+      // 防呆(2026-08-18 事故): 词典三栏全空时绝不写入覆盖——否则会把有效词典
+      // 覆盖成空数组, 指纹匹配全灭, L1/L2/L3 从此不再触发。
       var lex = { positive: parseLex(values['override.features.lexicon.positive']), negative: parseLex(values['override.features.lexicon.negative']), neutral: parseLex(values['override.features.lexicon.neutral']) }
-      setPath(o, 'features.lexicon', lex)
+      if (lex.positive.length + lex.negative.length + lex.neutral.length > 0) {
+        setPath(o, 'features.lexicon', lex)
+      }
       // 工具列表
       var tools = String(values['override.intervention.bootstrap_tools'] ?? '').split(/[,，\s]+/).filter(Boolean)
       if (tools.length > 0) setPath(o, 'intervention.bootstrap_tools', tools)
@@ -344,9 +348,15 @@
       values['override.intervention.hint_templates'] = (getPath(eff, 'intervention.hint_templates') ?? []).join('\n')
       values['override.intervention.bootstrap_tools'] = arrToComma(getPath(eff, 'intervention.bootstrap_tools') ?? ['bash', 'str_replace_editor'])
       values['override.intervention.bootstrap_system_prompt'] = getPath(eff, 'intervention.bootstrap_system_prompt') ?? 'You are a helpful software engineer assistant.'
-      values['override.features.lexicon.positive'] = lexToLines(getPath(eff, 'features.lexicon.positive'))
-      values['override.features.lexicon.negative'] = lexToLines(getPath(eff, 'features.lexicon.negative'))
-      values['override.features.lexicon.neutral'] = lexToLines(getPath(eff, 'features.lexicon.neutral'))
+      // 内置研究默认词典: 监控离线(effective 缺失)时表单仍显示有效词典, 防止空保存清空指纹
+      var DEFAULT_LEX = {
+        positive: ['we: 2', "let's: 1.5", "we'll: 1.2", 'we need: 1.2', 'our: 0.8'],
+        negative: ['let me: 3'],
+        neutral: ['i will: 1', "i'll: 1", 'i need: 0.8', 'check: 0.4', 'verify: 0.4']
+      }
+      values['override.features.lexicon.positive'] = lexToLines(getPath(eff, 'features.lexicon.positive') ?? DEFAULT_LEX.positive)
+      values['override.features.lexicon.negative'] = lexToLines(getPath(eff, 'features.lexicon.negative') ?? DEFAULT_LEX.negative)
+      values['override.features.lexicon.neutral'] = lexToLines(getPath(eff, 'features.lexicon.neutral') ?? DEFAULT_LEX.neutral)
       values['override.experiment_log.path'] = getPath(eff, 'experiment_log.path') ?? './logs/experiment.jsonl'
       values['override.experiment_log.max_file_size_mb'] = getPath(eff, 'experiment_log.max_file_size_mb') ?? 50
       values['override.experiment_log.rotate'] = getPath(eff, 'experiment_log.rotate') !== false

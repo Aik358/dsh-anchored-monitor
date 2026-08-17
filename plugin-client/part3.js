@@ -9,17 +9,20 @@
         return '<option value="' + esc(s.sessionId) + '"' + (s.sessionId === state.selected ? ' selected' : '') + '>' + esc(shortId(s.sessionId)) + '</option>'
       }).join('')
       return '<div class="am-panel-header" data-am="drag">'
-        + '<div class="am-panel-title">' + ICON_RADAR + '<span>' + esc(TEXTS.title) + '</span><span class="am-chip am-mono" data-am="ver">—</span></div>'
+        + '<div class="am-panel-top">'
+        + '<div class="am-panel-title">' + ICON_RADAR + '<span class="am-title-text">' + esc(TEXTS.title) + '</span><span class="am-chip am-mono" data-am="ver">—</span></div>'
         + '<span class="am-chip am-chip-band" data-am="bandchip">—</span>'
         + '<span class="am-chip" data-am="statuschip">—</span>'
-        + (state.sessions.length > 1 ? '<select class="am-select" data-am="session">' + opts + '</select>' : '')
+        + '</div>'
+        + '<div class="am-panel-sub">'
+        + (state.sessions.length > 1 ? '<select class="am-select" data-am="session">' + opts + '</select>' : '<span class="am-sub-note" data-am="subnote"></span>')
         + '<div class="am-panel-actions">'
         + '<button class="am-btn am-iv-switch am-iv-on" data-am="ivtoggle" title="' + esc(TEXTS.ivSwitchTitle) + '"></button>'
         + '<button class="am-btn am-btn-ico" data-am="lang" title="' + esc(TEXTS.switchLang) + '">' + (langZh ? 'EN' : '中') + '</button>'
         + '<button class="am-btn am-btn-ico" data-am="ext" title="' + esc(TEXTS.openDashboard) + '">' + ICON_EXT + '</button>'
         + '<button class="am-btn am-btn-ico" data-am="min" title="' + esc(TEXTS.collapse) + '">' + ICON_MIN + '</button>'
         + '<button class="am-btn am-btn-ico" data-am="close" title="' + esc(TEXTS.close) + '">' + ICON_X + '</button>'
-        + '</div></div>'
+        + '</div></div></div>'
         + '<div class="am-offline" data-am="offline" style="display:none"></div>'
         + '<div class="am-kpis">'
         + kpi('band', TEXTS.band, '<span data-am="bandv">—</span>', '<span data-am="bandsub">—</span>')
@@ -137,6 +140,13 @@
         recEl.innerHTML = '<table class="am-table"><tbody>' + ivRows.join('') + '</tbody></table>'
       } else {
         recEl.innerHTML = '<div class="am-empty">' + esc(T('暂无干预 — 轨迹稳定在 spec 带', 'No interventions — stable in the spec band')) + '</div>'
+      }
+      var subNote = panelEl.querySelector('[data-am=subnote]')
+      if (subNote) {
+        subNote.textContent = T('三波段', 'bands') + ' ' + state.thresholds.specMax + '/' + state.thresholds.reactMin
+          + ' · ' + TEXTS.cooldown + ' L2 ' + (state.cooldowns.L2_ms / 1000).toFixed(0) + 's'
+          + ' · ' + TEXTS.attempts + ' ' + (snap ? snap.l2Attempts : 0) + '/' + state.maxL2Attempts
+          + (state.interventionsEnabled === false ? ' · ' + TEXTS.monitorOnly : '')
       }
       panelEl.querySelector('[data-am=foot]').textContent = 'config ' + state.configHash + ' · ' + state.monitorUrl
       drawChart()
