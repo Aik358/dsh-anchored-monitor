@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-18
+
+### Fixed / Hardened
+
+- **dismantle the four hidden hazards** from the llm/stream deadlock incident:
+  - consumer-side defense: dsh-draw-gacha now iterates `await next()` (safe with any downstream listener);
+  - explicit rule written into the listener + README (producer = plain function returning async generator; consumer = `for await (chunk of await next())`);
+  - single-intervention-executor: `preset/` defaults `handleInterventions: false` — the host plugin owns L1/L2/L3, so mounting both can never double-register `agent/pre-step` / `system-prompt/assemble`.
+
 ## [0.2.0] - 2026-08-18
 
 ### Added

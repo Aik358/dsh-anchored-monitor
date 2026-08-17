@@ -169,6 +169,27 @@ reasoning 文本可能含敏感信息, 实验日志默认本地落盘, 可在 `e
 - [KDB-Wind/dsh-minimal-anchored](https://github.com/KDB-Wind/dsh-minimal-anchored) — Minimal 工具锚定替代方案
 - [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) — 本插件扩展的宿主框架
 
+## 插件作者注意(扩展前必读)
+
+**流式瀑布规矩** — `llm/stream` 是"流透传"waterfall: 链上排在前面的监听器会直接
+迭代排在它后面的监听器的返回值。因此:
+
+1. **生产方**: `llm/stream` 监听器必须是**普通函数返回 async generator**;
+   禁止写成 async 函数——async 会把 generator 包成 Promise, 上游 `for await`
+   迭代时抛 `next(...) is not a function or its return value is not async iterable`。
+2. **消费方**: 一律 `for await (const chunk of await next())` —— 先 await 再迭代,
+   下游返回 Promise 或流都能安全透传(dsh-draw-gacha 已加该防御)。
+3. `agent/pre-step`、`system-prompt/assemble` 属"值传递"事件,
+   async + `await next()` 在那里是正确的。
+
+违反一次 = 所有模型调用全部失败且会话不落任何事件; 若调 bundles 顺序或装新插件后
+"所有会话突然全挂", 第一反应就查 `llm/stream` 链。
+
+**单干预执行器原则** — L1/L2/L3 只允许一个执行者。Web 插件(host 半)是默认执行者;
+agent preset(`preset/`)默认 `handleInterventions: false`, 只负责推送 reasoning。
+两者同时开启会把 `agent/pre-step` / `system-prompt/assemble` 注册两份,
+L2 重置执行两次、hint 重复注入。
+
 ## License
 
 [MIT](LICENSE) © 2026 Aik358

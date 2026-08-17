@@ -20,7 +20,12 @@ export const inject = []
 const DEFAULTS = {
   monitorUrl: 'http://127.0.0.1:9301',
   enabled: true,
-  handleInterventions: true
+  // 单执行器原则(2026-08-18): Web 插件(host 半, lib/index.js)是干预的唯一执行者
+  // (cancel 当前回合 + followup 软重启续跑)。若本 preset 与 Web 插件同时挂载,
+  // 默认不再执行干预——否则 agent/pre-step 与 system-prompt/assemble 会被注册两份,
+  // L2 重置执行两次、hint 重复注入。本 preset 只负责把 reasoning 推给监控进程。
+  // 仅当「只用 preset、不装 Web 插件」时, 才显式配置 handleInterventions: true。
+  handleInterventions: false
 }
 
 export function apply(ctx, config) {

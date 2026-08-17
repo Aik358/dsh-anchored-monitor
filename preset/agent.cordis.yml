@@ -3,9 +3,16 @@
 #   把 preset/ 整个目录复制到 ~/.dsh/.agent-presets/anchored-monitor
 # 该预设必须与 anchored-standard(或 liangshen) 预设配合使用:
 #   由后者负责首轮 Minimal 锚定, 本预设负责锚定后的持续监控与干预
+#
+# 单执行器原则(2026-08-18): 干预只允许一个执行者。
+#   - 装了 Web 插件(host 半)时: preset 的 handleInterventions 保持 false,
+#     host 半负责取消回合 + followup 软重启续跑;
+#   - 只用 preset(不装 Web 插件)时: 改为 true, 由 preset 执行 L1/L2/L3。
+# 两份同时打开会双注册 agent/pre-step 与 system-prompt/assemble,
+# 导致 L2 重置执行两次、hint 重复注入。
 - id: anchored-monitor
   name: ./anchored-monitor.mjs
   config:
     monitorUrl: "http://127.0.0.1:9301"
     enabled: true
-    handleInterventions: true
+    handleInterventions: false

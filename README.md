@@ -193,6 +193,31 @@ and sends intervention signals. All HTTP routes are loopback-only. Reasoning
 text may be sensitive — the experiment log is local by default; rotate/disable
 it in `experiment_log`.
 
+## Plugin author notes (read before extending)
+
+**Streaming waterfall rule** — `llm/stream` is a stream-passthrough waterfall:
+listeners earlier in the chain iterate the return value of the listeners after
+them. Therefore:
+
+1. **Producer side**: an `llm/stream` listener MUST be a plain function that
+   returns an async generator. Never declare it `async` — the generator gets
+   wrapped in a Promise and upstream `for await` consumers crash with
+   `next(...) is not a function or its return value is not async iterable`.
+2. **Consumer side**: always `for await (const chunk of await next())` —
+   await first, then iterate; safe regardless of what downstream returns.
+3. `agent/pre-step` / `system-prompt/assemble` are value-passing events;
+   `async` + `await next()` is correct there.
+
+A violation took down **every** model request with zero logged events — if all
+sessions suddenly fail after a bundle reorder or a new plugin, audit the
+`llm/stream` chain first.
+
+**Single-intervention-executor rule** — L1/L2/L3 must have exactly one
+executor. The Web plugin (host half) owns interventions and is the default;
+the agent preset (`preset/`) ships with `handleInterventions: false` and only
+pushes reasoning. Enabling both would double-register
+`agent/pre-step` / `system-prompt/assemble` and fire L2 resets twice.
+
 ## Credits
 
 Built on the measured results of these community projects (shallow-cloned in
