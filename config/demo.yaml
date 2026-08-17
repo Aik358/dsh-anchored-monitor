@@ -1,0 +1,19 @@
+# 演示 profile: 与 default.yaml 深合并(--profile demo), 加速冷却与触发,
+# 便于在几分钟内看到 L1→L2→L3 完整级联
+version: "0.1.0"
+event_source:
+  type: "ipc_push"
+  poll_interval_ms: 20
+threshold:
+  baseline_min_samples: 8
+  trigger:
+    - { type: "mixed_band", severity: warning }
+    - { type: "react_band", severity: critical }
+intervention:
+  cooldowns:
+    L1_ms: 1500
+    L2_ms: 800
+    L3_ms: 0
+  max_L2_attempts: 5
+experiment_log:
+  path: "./demo-data/experiment.jsonl"

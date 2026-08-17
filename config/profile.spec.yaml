@@ -1,0 +1,13 @@
+# spec 模式策略: 高敏感度, 早期介入(适合实验或高价值会话)
+version: "0.1.0"
+threshold:
+  baseline_min_samples: 8
+  trigger:
+    - { type: "sigma", k: 1.2 }
+    - { type: "safety_floor" }
+  safety_floor: 15.0
+intervention:
+  cooldowns:
+    L1_ms: 10000
+    L2_ms: 30000
+    L3_ms: 0

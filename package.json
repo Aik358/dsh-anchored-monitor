@@ -1,0 +1,82 @@
+{
+  "name": "@a9i5k4/dsh-anchored-monitor",
+  "version": "0.1.0",
+  "description": "DSH 实时思维链锚定监控插件: we/let's/let me 指纹波段检测(spec/mixed/react) + L1温和引导/L2强制重置/L3会话重启分级干预; 左侧栏入口 + 液体毛玻璃浮层 + 变阻器式思考强度条; 独立监控进程 + JSONL 实验日志 + 离线回放/参数校准。",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "anchored-monitor": "dist/monitor/index.js"
+  },
+  "files": [
+    "lib",
+    "dist",
+    "config",
+    "preset",
+    "web",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ],
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "anchored",
+    "monitor",
+    "reasoning",
+    "chain-of-thought",
+    "spec-band"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aik358/dsh-anchored-monitor.git"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/assemble-client.mjs",
+    "client:bundle": "node scripts/assemble-client.mjs",
+    "start": "node dist/monitor/index.js",
+    "dev": "node dist/monitor/index.js",
+    "demo:generate": "node dist/demo/generate.js",
+    "demo:feed": "node dist/demo/feed.js",
+    "replay": "node dist/scripts/replay.js",
+    "calibrate": "node dist/scripts/calibrate.js",
+    "preview:build": "node dist/scripts/build-preview.js"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^5.9.3"
+  }
+}

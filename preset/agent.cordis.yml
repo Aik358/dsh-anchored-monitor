@@ -1,0 +1,11 @@
+# anchored-monitor 预设的 AGENT-PLANE 组合
+# 参照 dsh-anchored-standard 的安装方式:
+#   把 preset/ 整个目录复制到 ~/.dsh/.agent-presets/anchored-monitor
+# 该预设必须与 anchored-standard(或 liangshen) 预设配合使用:
+#   由后者负责首轮 Minimal 锚定, 本预设负责锚定后的持续监控与干预
+- id: anchored-monitor
+  name: ./anchored-monitor.mjs
+  config:
+    monitorUrl: "http://127.0.0.1:9301"
+    enabled: true
+    handleInterventions: true

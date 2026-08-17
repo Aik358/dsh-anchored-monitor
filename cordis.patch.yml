@@ -1,0 +1,9 @@
+# dsh-anchored-monitor bundle patch: 把双面插件行插入 web profile roster。
+# 作为 profile bundle 层应用(dsh.bundle.patch 清单字段)。
+# node 半边(exports ".")运行在 host 进程: /api/anchored-monitor/* 代理路由
+# (转发到独立监控进程 127.0.0.1:9301) + 系统提示词宣发段。
+# 浏览器半边(exports "./client", 由 /plugins/<id>/client.js 提供)在 Web GUI 加载:
+# 左侧栏「锚定监控」入口 + shell.overlay 液体毛玻璃浮层 + 收起态变阻器条。
+- insert:
+    - id: anchored-monitor
+      name: '@a9i5k4/dsh-anchored-monitor'

@@ -1,0 +1,115 @@
+version: "0.1.0"
+# 会话日志路径模板: {sessionId} 会被替换; ~ 展开为用户主目录
+# 同时支持纯文本 .jsonl 与 harness 压缩日志 session.jsonl.zstd
+session_id_pattern: "~/.dsh/sessions/{sessionId}/events.jsonl"
+
+event_source:
+  type: "log_tail"          # log_tail | ipc_push
+  poll_interval_ms: 50
+  start_from: "beginning"   # beginning | end
+  # 从 JSONL 事件行中提取 reasoning 文本的候选字段(按顺序尝试)
+  log_event_reasoning_fields: ["reasoning", "reasoning_content", "reasoningText"]
+
+features:
+  lexicon:
+    # 正向词典: spec 轨迹的集体/规划措辞指纹
+    # 口径来自 dsh-anchored-flash verify/count-pronouns.mjs: we / let's 整词大小写不敏感
+    positive:
+      - { term: "we", weight: 2.0, match: word }
+      - { term: "let's", weight: 1.5, match: word }
+      - { term: "we'll", weight: 1.2, match: word }
+      - { term: "we need", weight: 1.2, match: word }   # router-standard classifier.mjs: 首行 "we need" +3
+      - { term: "our", weight: 0.8, match: word }
+    # 负向词典: 仅保留 react 轨迹指纹 "let me"
+    # 锚定纠偏(2026-08-17): i will / i'll / i need 为规划标记, 已移入中性, 不算负向
+    negative:
+      - { term: "let me", weight: 3.0, match: word }
+    # 中性词典: 规划标记(第一人称将来时/需求陈述, 非行动者措辞) + 验证类
+    neutral:
+      - { term: "i will", weight: 1.0, match: word }
+      - { term: "i'll", weight: 1.0, match: word }
+      - { term: "i need", weight: 0.8, match: word }
+      - { term: "check", weight: 0.4, match: word }
+      - { term: "verify", weight: 0.4, match: word }
+  regex_features:
+    - { name: "question_marks", pattern: "\\?", weight: 0.2 }
+    - { name: "bullet_list", pattern: "^(\\s*[-*]\\s)", weight: 0.3 }
+
+window:
+  type: "sliding"           # sliding | decay
+  size: 20
+  decay_lambda: 0.05
+
+scoring:
+  type: "weighted_ratio"    # weighted_ratio | percentile | composite
+  weights:
+    alpha: 2.0              # 正向聚合权重
+    beta: 0.5               # 中性聚合权重
+    gamma: 1.5              # 负向聚合惩罚
+    epsilon: 1.0            # 平滑项
+  normalize: true           # 分位数归一化到 0-100
+  percentile_window: 200
+
+bands:
+  # 三波段量化 — 严格按 dsh-router-standard router-core.mjs bandOf():
+  #   persona_ratio < 0.2            → spec  (实测稳定区 0..0.15)
+  #   0.2 <= persona_ratio < 0.5     → mixed (过渡带, 实测不稳定且得分低于任一稳定带, 必须避开)
+  #   persona_ratio >= 0.5           → react (实测稳定区 0.5..1.0)
+  # persona_ratio = 窗口内 "let me" 数 / (正向词数 + "let me" 数)
+  mode: "persona_ratio"
+  spec_max: 0.2
+  react_min: 0.5
+
+threshold:
+  baseline_min_samples: 10  # 基线建立前不判定
+  baseline_window: 50
+  trend_window: 5
+  trend_slope_sigma: 0.25
+  trigger:                  # 任一命中即触发; severity: warning→L1, critical→L2
+    # 检测信号 = 三波段跨越(router-standard bandOf 实测结论)
+    - { type: "mixed_band", severity: warning }
+    - { type: "react_band", severity: critical }
+    # 可选统计规则(基于分位数, 噪声较大, 默认关闭; 实验场景按需打开):
+    # - { type: "sigma", k: 1.5, severity: warning }
+    # - { type: "percentile", p: 5, severity: warning }
+    # - { type: "safety_floor", severity: critical }
+  # 恢复迟滞: ratio 回到 spec 带才解除告警
+  recovery: { type: "spec_band" }
+  safety_floor: 10.0
+
+intervention:
+  cooldowns:
+    L1_ms: 30000
+    L2_ms: 120000
+    L3_ms: 0
+  max_L2_attempts: 2
+  rules:
+    - { when: warning, trend: falling, action: L1 }
+    - { when: critical, L2_attempts_lt: 2, action: L2 }
+    - { when: critical, L2_attempts_gte: 2, action: L3 }
+  hint_templates:
+    # 措辞纪律 — dsh-anchored-flash 实验 E1/E1.5: 仅中性声明/建议式,
+    # 禁止命令式(must/first/follow), 命令式会把 we 轨迹打回 let me
+    - "reading the index is recommended — it is short"
+    - "reviewing the context might be helpful"
+    - "consider checking the relevant documentation"
+  # L2 重置载荷 — 逐字节对齐官方 Minimal 预设:
+  #   persona 46 字符 + bash/str_replace_editor 精确双工具
+  # (tool-bootstrap.mjs DEFAULT_BOOTSTRAP_TOOLS; 首轮锚定 5/5, 其余 schema 11/11 翻车)
+  bootstrap_tools: ["bash", "str_replace_editor"]
+  bootstrap_system_prompt: "You are a helpful software engineer assistant."
+
+experiment_log:
+  path: "./logs/experiment.jsonl"
+  max_file_size_mb: 50
+  rotate: true
+
+ipc:
+  protocol: "http"
+  host: "127.0.0.1"
+  port: 9301
+
+dashboard:
+  host: "127.0.0.1"
+  port: 9301
+  web_root: "./web"

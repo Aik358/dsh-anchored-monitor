@@ -1,0 +1,486 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AnchoredMonitorConfig",
+  "description": "anchored-monitor 实验配置 JSON Schema",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "version",
+    "event_source",
+    "features",
+    "window",
+    "scoring",
+    "bands",
+    "threshold",
+    "intervention",
+    "experiment_log",
+    "dashboard"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "session_id_pattern": {
+      "type": "string"
+    },
+    "event_source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "log_tail",
+            "ipc_push"
+          ]
+        },
+        "poll_interval_ms": {
+          "type": "number",
+          "minimum": 5
+        },
+        "start_from": {
+          "enum": [
+            "beginning",
+            "end"
+          ]
+        },
+        "log_event_reasoning_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "required": [
+        "lexicon"
+      ],
+      "properties": {
+        "lexicon": {
+          "type": "object",
+          "required": [
+            "positive",
+            "negative",
+            "neutral"
+          ],
+          "properties": {
+            "positive": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/lexiconEntry"
+              }
+            },
+            "negative": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/lexiconEntry"
+              }
+            },
+            "neutral": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/lexiconEntry"
+              }
+            }
+          }
+        },
+        "regex_features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/regexFeature"
+          }
+        }
+      }
+    },
+    "window": {
+      "type": "object",
+      "required": [
+        "type",
+        "size"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "sliding",
+            "decay"
+          ]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "decay_lambda": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "weighted_ratio",
+            "percentile",
+            "composite"
+          ]
+        },
+        "weights": {
+          "type": "object",
+          "required": [
+            "alpha",
+            "beta",
+            "gamma",
+            "epsilon"
+          ],
+          "properties": {
+            "alpha": {
+              "type": "number"
+            },
+            "beta": {
+              "type": "number"
+            },
+            "gamma": {
+              "type": "number"
+            },
+            "epsilon": {
+              "type": "number"
+            }
+          }
+        },
+        "normalize": {
+          "type": "boolean"
+        },
+        "percentile_window": {
+          "type": "integer",
+          "minimum": 10
+        },
+        "composite": {
+          "type": "object",
+          "properties": {
+            "components": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "kind",
+                  "weight"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "weighted_ratio",
+                      "question_ratio",
+                      "length_ratio"
+                    ]
+                  },
+                  "weight": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "bands": {
+      "type": "object",
+      "required": [
+        "mode",
+        "spec_max",
+        "react_min"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "persona_ratio"
+          ]
+        },
+        "spec_max": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "react_min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "threshold": {
+      "type": "object",
+      "required": [
+        "baseline_min_samples",
+        "baseline_window",
+        "trigger",
+        "recovery"
+      ],
+      "properties": {
+        "baseline_min_samples": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "baseline_window": {
+          "type": "integer",
+          "minimum": 5
+        },
+        "trend_window": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "trend_slope_sigma": {
+          "type": "number",
+          "minimum": 0
+        },
+        "trigger": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/triggerRule"
+          }
+        },
+        "recovery": {
+          "$ref": "#/definitions/triggerRule"
+        },
+        "safety_floor": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "intervention": {
+      "type": "object",
+      "required": [
+        "cooldowns",
+        "max_L2_attempts",
+        "rules"
+      ],
+      "properties": {
+        "cooldowns": {
+          "type": "object",
+          "required": [
+            "L1_ms",
+            "L2_ms",
+            "L3_ms"
+          ],
+          "properties": {
+            "L1_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "L2_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "L3_ms": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "max_L2_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/interventionRule"
+          }
+        },
+        "hint_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "bootstrap_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "bootstrap_system_prompt": {
+          "type": "string"
+        }
+      }
+    },
+    "experiment_log": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "max_file_size_mb": {
+          "type": "number",
+          "minimum": 1
+        },
+        "rotate": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ipc": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "enum": [
+            "http"
+          ]
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
+    },
+    "dashboard": {
+      "type": "object",
+      "required": [
+        "port"
+      ],
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "web_root": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "lexiconEntry": {
+      "type": "object",
+      "required": [
+        "term",
+        "weight",
+        "match"
+      ],
+      "properties": {
+        "term": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "number"
+        },
+        "match": {
+          "enum": [
+            "exact",
+            "word",
+            "regex"
+          ]
+        },
+        "caseInsensitive": {
+          "type": "boolean"
+        }
+      }
+    },
+    "regexFeature": {
+      "type": "object",
+      "required": [
+        "name",
+        "pattern",
+        "weight"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "number"
+        }
+      }
+    },
+    "triggerRule": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "sigma",
+            "percentile",
+            "safety_floor",
+            "mixed_band",
+            "react_band",
+            "spec_band"
+          ]
+        },
+        "k": {
+          "type": "number"
+        },
+        "p": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "severity": {
+          "enum": [
+            "warning",
+            "critical"
+          ]
+        }
+      }
+    },
+    "interventionRule": {
+      "type": "object",
+      "required": [
+        "when",
+        "action"
+      ],
+      "properties": {
+        "when": {
+          "enum": [
+            "warning",
+            "critical"
+          ]
+        },
+        "trend": {
+          "enum": [
+            "falling",
+            "stable",
+            "rising"
+          ]
+        },
+        "L2_attempts_lt": {
+          "type": "integer"
+        },
+        "L2_attempts_gte": {
+          "type": "integer"
+        },
+        "action": {
+          "enum": [
+            "L1",
+            "L2",
+            "L3"
+          ]
+        }
+      }
+    }
+  }
+}

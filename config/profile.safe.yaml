@@ -1,0 +1,14 @@
+# 保守策略: 高门槛, 降低误报(适合生产或长会话)
+version: "0.1.0"
+threshold:
+  baseline_min_samples: 15
+  trigger:
+    - { type: "sigma", k: 2.5 }
+    - { type: "percentile", p: 2 }
+  safety_floor: 5.0
+intervention:
+  cooldowns:
+    L1_ms: 60000
+    L2_ms: 180000
+    L3_ms: 0
+  max_L2_attempts: 3

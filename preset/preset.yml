@@ -1,0 +1,3 @@
+name: Anchored Monitor (experimental)
+description: 实时思维链锚定监控: 把每个 reasoning 块推送到本地监控进程, 依据 we/let's/let me 指纹执行 L1 温和引导 / L2 强制重置 / L3 会话重启分级干预.
+order: 6
