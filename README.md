@@ -51,18 +51,31 @@ until now.
 - **Liquid-glass Web UI** — a sidebar entry opens a frosted-glass panel floating
   above the conversation (drag / resize / remembered). Collapsed, it becomes a
   **rheostat-style bar** showing thinking intensity as a slider position plus a
-  rolling log ticker. DeepSeek white/gray/blue palette, dark theme supported.
+  rolling log ticker. DeepSeek white/gray/blue palette; dark mode uses neutral
+  grays matching the shell. The bar is a fixed-width rounded rectangle (320px,
+  viewport-adaptive) — no size jumping. **zh/en language toggle** in the panel
+  header and settings.
 - **Zero-setup auto-start** — the host plugin spawns the monitor process when
   DSH starts (15s watchdog keeps it alive). No manual steps.
+- **Live streaming ECG** — the host subscribes to `llm/stream` and pushes
+  `reasoning-delta` chunks (1s throttle), so the charts and the bar move
+  while the model thinks — not just after each turn. Counts are additive, so
+  window aggregates stay exact.
+- **Intervention master switch** — a toggle in the panel header turns
+  interventions on/off at runtime (persisted across restarts); off = monitor-only,
+  no interruptions — handy when switching models.
 - **Full settings page** — every parameter (window, lexicon, scoring weights,
   band boundaries, thresholds, cooldowns, hint templates, bootstrap pair, log
   rotation) is editable in the DSH settings page with explanations and a
-  floating save bar; saving restarts the monitor to apply changes.
-- **In-loop interventions** — the host observes every session's reasoning
-  blocks, pushes them to the monitor, and executes L1/L2/L3 automatically:
-  L1 injects a suggestive hint into the next request, L2 swaps the persona to
-  the 46-char Minimal sentence + `bash`/`str_replace_editor` for the next
-  request, L3 injects restart advice.
+  floating save bar; saving restarts the monitor to apply changes. Charts only
+  draw threshold lines for **enabled** trigger rules.
+- **In-loop interventions with auto-continue** — the host observes every
+  session's reasoning, executes L1/L2/L3 automatically, and then **continues
+  the task instead of stopping**:
+  L1 injects a suggestive context hint (never imperative); L2 **cancels the
+  running turn and soft-restarts** the conversation (the next request runs
+  under the 46-char Minimal persona + `bash`/`str_replace_editor`); L3
+  applies the same soft restart plus restart advice.
 - **Experiment-first** — every lexicon entry, weight, threshold, window, band
   boundary and cooldown lives in YAML (`config/*.yaml`, validated against
   `config/schema.json`). JSONL experiment logs, offline replay and grid-search
@@ -145,6 +158,21 @@ See [docs/experiment-params.md](docs/experiment-params.md) for the full
 parameter reference. Everything is YAML — no hardcoded tuning.
 
 ## FAQ
+
+**What happens after an intervention — does the conversation stop?**
+No. Every intervention auto-continues the task: L1 injects a hint and the next
+turn keeps going; L2 stops the running turn (soft restart) and immediately
+re-enters context — the next request continues the task under the Minimal
+persona + bootstrap pair; L3 does the same and adds restart advice.
+
+**Why did the chart feel slow / frozen?**
+Before 0.2.0, data only arrived once per finished turn. The host now streams
+`reasoning-delta` chunks to the monitor every ~1s, so the curve moves while
+the model thinks.
+
+**How do I disable interventions?**
+Use the panel-header switch (persisted), or set `intervention.enabled: false`
+in the settings — monitoring continues, interventions stop.
 
 **Does L2 truncate the model's context?**
 No. L2 replaces only the next request's *persona section* with the 46-char

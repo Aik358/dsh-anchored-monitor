@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-18
+
+### Added
+
+- **Zero-setup auto-start** — the host plugin spawns the monitor process when DSH starts (15s watchdog keeps it alive); no manual steps.
+- **In-loop live interventions** — the host observes every session's reasoning, executes L1/L2/L3 automatically, and **auto-continues the task** (inbox `followup`) instead of stopping:
+  - L1: suggestive hint injected as context (never imperative);
+  - L2: **cancels the running turn and soft-restarts** — next request runs under the 46-char Minimal persona + `bash`/`str_replace_editor`;
+  - L3: same soft-restart plus restart advice.
+- **Live streaming ECG** — the host subscribes to `llm/stream` and pushes `reasoning-delta` chunks (1s throttle) so charts move while the model thinks (counts are additive; window aggregates are exact).
+- **Intervention master switch** — panel-header toggle (runtime + persisted): off = monitor-only, no interventions.
+- **Full settings page** — every parameter editable in the DSH settings page with explanations and a floating save bar (saving restarts the monitor).
+- **zh/en language toggle** (panel header + settings), persisted.
+- **Self-healing intervention execution** — the monitor snapshot is the single source of truth; `sent` interventions are executed and acked, recovering missed signals after restarts.
+
+### Changed
+
+- Dark theme now uses neutral grays (zinc `#18181b`) matching the shell background.
+- The collapsed bar is a fixed-width rounded rectangle (320px, adaptive to viewport) — no more size jumping.
+- Charts only draw threshold lines for **enabled** trigger rules (no misleading floor/μ lines).
+- Faster heartbeats: 500ms polling, 1.5s ticker.
+
+### Fixed
+
+- **Critical**: the `llm/stream` waterfall listener was an async function wrapping the generator in a Promise, breaking every model request when another stream listener (`for await` over `next()`) sat earlier in the chain. The listener now returns the async generator directly.
+- Missed intervention execution for signals older than the first poll (baseline-by-sequence bug).
+
 ## [0.1.0] - 2026-08-17
 
 ### Added
