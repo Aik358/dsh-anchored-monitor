@@ -13,6 +13,7 @@ import type {
   Phase,
   ReasoningBlock,
   SessionSnapshot,
+  TextChunkBlock,
   SessionSummary,
   TrendDirection,
   WindowSnapshot
@@ -61,8 +62,18 @@ interface SessionState {
   source: 'log_tail' | 'ipc_push'
   startedAt: number
   lastActivityAt: number
+  lastReasoningAt: number
   blockCount: number
   lastSequence: number
+  textSeq: number
+  textChars: number
+  textChunks: number
+  lastTextAt: number
+  textSample: string
+  textTimes: { at: number; chars: number }[]
+  guardLastAt: { stall: number; leak: number }
+  cotAlerts: { stall: number; leak: number }
+  lastAlertAt: number | null
   phase: Phase
   l2Attempts: number
   window: WindowAggregator
@@ -137,8 +148,18 @@ export class SessionManager {
       source,
       startedAt: Date.now(),
       lastActivityAt: Date.now(),
+      lastReasoningAt: Date.now(),
       blockCount: 0,
       lastSequence: 0,
+      textSeq: 0,
+      textChars: 0,
+      textChunks: 0,
+      lastTextAt: 0,
+      textSample: '',
+      textTimes: [],
+      guardLastAt: { stall: 0, leak: 0 },
+      cotAlerts: { stall: 0, leak: 0 },
+      lastAlertAt: null,
       phase: 'healthy',
       l2Attempts: 0,
       window:
@@ -176,6 +197,7 @@ export class SessionManager {
     state.lastSequence = seq
     state.blockCount += 1
     state.lastActivityAt = Date.now()
+    state.lastReasoningAt = Date.now()
 
     this.opts.emit({
       type: 'block_received',
@@ -338,6 +360,90 @@ export class SessionManager {
     if (state.history.length > MAX_HISTORY_POINTS) state.history.shift()
   }
 
+  /** text 信道指纹比: 与 personaRatio 同口径(负向词数/(正向+负向)), 但只在最近 text 样本上算 */
+  private textThinkRatio(state: SessionState): number {
+    const sample = state.textSample
+    if (!sample) return 0
+    const vec = this.opts.extractor.extract({ sessionId: state.sessionId, timestamp: Date.now(), sequence: 0, text: sample, source: 'ipc' })
+    let pos = 0
+    let neg = 0
+    for (const t of this.opts.lexicon.positiveTerms) pos += vec.counts[t] ?? 0
+    for (const t of this.opts.lexicon.negativeTerms) neg += vec.counts[t] ?? 0
+    const total = pos + neg
+    return total > 0 ? neg / total : 0
+  }
+
+  /** CoT 守卫评估: text 泄漏 + reasoning 停摆(仅告警, 不自动干预) */
+  private evaluateGuards(state: SessionState, now: number): void {
+    const cfg = this.opts.config.guards?.cot
+    if (!cfg || !cfg.enabled) return
+    // 1) text_leak: 窗口内字符数达标 + 思考样式指纹密度达标 → 思考泄漏进可见正文
+    if (now - state.guardLastAt.leak >= cfg.cooldown_ms) {
+      const windowChars = state.textTimes.reduce((s, t) => s + t.chars, 0)
+      if (windowChars >= cfg.text_surge_chars) {
+        const ratio = this.textThinkRatio(state)
+        if (ratio >= cfg.text_leak_ratio) {
+          state.cotAlerts.leak += 1
+          state.guardLastAt.leak = now
+          state.lastAlertAt = now
+          this.opts.emit({
+            type: 'guard_triggered',
+            sessionId: state.sessionId,
+            timestamp: now,
+            guard: 'text_leak',
+            detail: 'text 信道 ' + windowChars + ' chars/『' + cfg.text_surge_window_ms + 'ms』, 思考样式指纹比 ' + ratio.toFixed(2)
+          })
+        }
+      }
+    }
+    // 2) stream_stall: 见过 reasoning, 且已停摆超过阈值, 但 text 信道仍在出内容
+    if (state.blockCount > 0 && now - state.lastReasoningAt > cfg.reasoning_stall_ms) {
+      if (now - state.lastTextAt <= cfg.text_active_window_ms) {
+        if (now - state.guardLastAt.stall >= cfg.cooldown_ms) {
+          state.cotAlerts.stall += 1
+          state.guardLastAt.stall = now
+          state.lastAlertAt = now
+          this.opts.emit({
+            type: 'guard_triggered',
+            sessionId: state.sessionId,
+            timestamp: now,
+            guard: 'streaming_stall',
+            detail: 'reasoning 停摆 ' + Math.round((now - state.lastReasoningAt) / 1000) + 's, text 仍在输出'
+          })
+        }
+      }
+    }
+  }
+
+  /** 摄入一个 text 信道增量(可见正文): 更新计数并做 CoT 泄漏/停摆评估 */
+  ingestText(block: TextChunkBlock): void {
+    const cfg = this.opts.config.guards?.cot
+    if (!cfg || !cfg.enabled) return
+    const state = this.getOrCreate(block.sessionId, 'ipc_push')
+    const seq = block.sequence > 0 ? block.sequence : state.textSeq + 1
+    if (seq <= state.textSeq) return // 重复/乱序丢弃
+    state.textSeq = seq
+    state.textChunks += 1
+    state.textChars += block.text.length
+    state.lastTextAt = Date.now()
+    state.lastActivityAt = state.lastTextAt
+    const maxSample = Math.max(cfg.text_surge_chars, 2000)
+    state.textSample = (state.textSample + block.text).slice(-maxSample)
+    const now = Date.now()
+    state.textTimes.push({ at: now, chars: block.text.length })
+    const w = cfg.text_surge_window_ms
+    while (state.textTimes.length > 0 && now - state.textTimes[0].at > w) state.textTimes.shift()
+
+    this.opts.emit({
+      type: 'text_chunk_received',
+      sessionId: block.sessionId,
+      timestamp: now,
+      sequence: seq,
+      textLength: block.text.length
+    })
+    this.evaluateGuards(state, now)
+  }
+
   private buildSignal(
     state: SessionState,
     level: Exclude<InterventionLevel, 'none'>,
@@ -387,6 +493,10 @@ export class SessionManager {
     state.rawHistory = []
     state.normalizedHistory = []
     state.lastNormalized = null
+    // L2 重置后重新计时: 停摆守卫时钟重启, 期待新一轮 reasoning
+    state.lastReasoningAt = Date.now()
+    state.textTimes = []
+    state.textSample = ''
   }
 
   /** 手动触发一次 L2 重置(测试/运维入口) */
@@ -459,7 +569,15 @@ export class SessionManager {
         band: last ? last.band : 'unknown',
         interventions: s.interventions.length,
         lastActivityAt: s.lastActivityAt,
-        source: s.source
+        source: s.source,
+        cot: {
+          textChars: s.textChars,
+          textChunks: s.textChunks,
+          alerts: s.cotAlerts.stall + s.cotAlerts.leak,
+          stallAlerts: s.cotAlerts.stall,
+          leakAlerts: s.cotAlerts.leak,
+          lastAlertAt: s.lastAlertAt
+        }
       })
     }
     return out
@@ -509,7 +627,15 @@ export class SessionManager {
         ratio: h.ratio,
         windowAggregate: h.windowAggregate
       })),
-      cooldowns: s.cooldowns.snapshot(Date.now())
+      cooldowns: s.cooldowns.snapshot(Date.now()),
+      cot: {
+        textChars: s.textChars,
+        textChunks: s.textChunks,
+        alerts: s.cotAlerts.stall + s.cotAlerts.leak,
+        stallAlerts: s.cotAlerts.stall,
+        leakAlerts: s.cotAlerts.leak,
+        lastAlertAt: s.lastAlertAt
+      }
     }
   }
 }

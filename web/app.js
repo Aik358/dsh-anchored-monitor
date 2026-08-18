@@ -427,6 +427,8 @@ function feedLabel(evt) {
       return { kind: evt.level, cls: 'k-intervention', text: (state.sessions.length > 1 ? shortId(evt.sessionId) + ' ' : '') + '#' + evt.sequence + ' ' + evt.level + ' · ' + evt.reason }
     case 'ack_received':
       return { kind: 'ack', cls: 'k-ack', text: (state.sessions.length > 1 ? shortId(evt.sessionId) + ' ' : '') + evt.level + ' 已执行' }
+    case 'guard_triggered':
+      return { kind: 'guard', cls: 'k-guard', text: (state.sessions.length > 1 ? shortId(evt.sessionId) + ' ' : '') + (evt.guard === 'text_leak' ? '🧠 CoT 泄漏' : '⏸ CoT 停摆') + ' · ' + evt.detail }
     case 'session_start':
       return { kind: 'session', cls: 'k-session', text: '会话启动 ' + shortId(evt.sessionId) + ' · ' + evt.configHash }
     case 'session_end':

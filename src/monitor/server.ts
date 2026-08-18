@@ -207,6 +207,7 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
             cooldowns: opts.config.intervention.cooldowns,
             maxL2Attempts: opts.config.intervention.max_L2_attempts,
             bootstrapTools: opts.config.intervention.bootstrap_tools,
+            guards: opts.config.guards,
             interventionsEnabled: opts.manager.isInterventionsEnabled(),
             sessions: summaries,
             selected: sessionId,
@@ -251,6 +252,23 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
             source: 'ipc' as const
           }
           opts.manager.ingest(block)
+          return json(res, 200, { ok: true, sessionId })
+        }
+        if (path === '/api/push-text' && req.method === 'POST') {
+          const body = await readJsonBody(req, 1024 * 1024)
+          const sessionId = body.sessionId
+          const text = body.text
+          if (typeof sessionId !== 'string' || sessionId.length === 0 || typeof text !== 'string') {
+            return json(res, 400, { ok: false, error: 'push-text 需要 { sessionId: string, text: string }' })
+          }
+          const chunk = {
+            sessionId,
+            text,
+            sequence: typeof body.sequence === 'number' ? body.sequence : 0,
+            timestamp: typeof body.timestamp === 'number' ? body.timestamp : Date.now(),
+            source: 'ipc' as const
+          }
+          opts.manager.ingestText(chunk)
           return json(res, 200, { ok: true, sessionId })
         }
         const sessionMatch = path.match(/^\/api\/sessions\/([^/]+)$/)

@@ -68,6 +68,8 @@ window.__ModuleLoader__.load({
         skinMeme: T('梗皮肤', 'Meme skin'),
         skinMemeDesc: T('变阻器条变身「滑动变祖器」: 表情小气泡浮在强度圆圈上方, 随强度从夯到拉切换梁文锋表情并脉冲发光。', 'The bar becomes the "Liang-o-meter": a face bubble floats above the intensity knob, flipping Liang Wenfeng faces from focused to slacking as intensity rises, with a pulsing glow.'),
         memeTitle: T('滑动变祖器', 'Liang-o-meter'),
+        cotLeak: T('CoT 泄漏', 'CoT leak'),
+        cotStall: T('CoT 停摆', 'CoT stall'),
         resetBtn: T('恢复默认', 'Reset to defaults'),
         resetConfirm: T('确定把全部监控参数恢复为默认值? 自定义的窗口/词典/评分/阈值/冷却等设置会被清除。', 'Reset all monitor parameters to defaults? Custom window / lexicon / scoring / threshold / cooldown settings will be cleared.'),
         resetDone: T('已恢复默认参数', 'Reset to defaults'),
@@ -254,6 +256,7 @@ window.__ModuleLoader__.load({
         case 'threshold_check': return e.triggered ? '#' + e.sequence + ' ⚠ ' + (e.matched || []).join(', ') : null
         case 'intervention_triggered': return e.level + ' #' + e.sequence + ' · ' + e.reason
         case 'ack_received': return e.level + ' ✓'
+        case 'guard_triggered': return (e.guard === 'text_leak' ? '🧠 ' + TEXTS.cotLeak : '⏸ ' + TEXTS.cotStall) + ' · ' + e.detail
         case 'session_start': return T('会话启动', 'Session start') + ' · ' + shortId(e.sessionId)
         case 'session_end': return T('会话结束', 'Session end') + ' · ' + e.reason
         default: return null

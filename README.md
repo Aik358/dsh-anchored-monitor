@@ -40,6 +40,36 @@ your model's thinking efficiency / capability intensity.
 > Open the settings page and you can tune every parameter — and one-click
 > **Reset to defaults** if you ever change too much.
 
+## Which mode does it pair with?
+
+**You don't need to force-install [dsh-anchored-standard](https://github.com/xiaobright/dsh-anchored-standard).**
+
+The monitor never checks a preset's *name*. It reads every session's reasoning
+blocks (`~/.dsh/sessions/*/events.jsonl`) and scores them purely by the
+`we / let's / let me` fingerprint (spec band < 0.2, mixed 0.2–0.5, react ≥ 0.5).
+So **any preset that implements the anchored-standard discipline** — anchor the
+first turn with the Minimal persona (46-character persona + `bash`/`str_replace_editor`),
+then plan in a collective "we" style without "let me" — pairs with this plugin.
+Renamed / derivative presets work too: **梁神模式 (Liang-god Mode)**, liangshen,
+and any other preset built on the same anchoring idea. The L2 reset payload is
+fully self-contained (the Minimal 46-character persona + the dual tools ship in
+this plugin's own config), so nothing is imported from another repo at runtime.
+
+> ⚠️ One caveat: if the session was never anchored in the first place, it stays
+> in the react band and L2 keeps firing — that's a fight loop, not monitoring.
+> Keep interventions **OFF (monitor-only)** unless you're on the model this whip
+> was tuned for.
+
+**When to turn interventions on / off** — the whip is tuned for
+**DeepSeek V4 Pro 0813**:
+
+- ✅ DeepSeek V4 Pro 0813 → interventions **ON** (recommended).
+- ❌ Any other model → interventions **OFF** (monitor-only) — keep it as a pure live gauge.
+
+This exact advice is shown right inside the plugin's panels:
+
+> ℹ Tip: keep interventions on only for DeepSeek V4 Pro 0813; turn them off (monitor-only) for other models.
+
 ## Why this exists
 
 DeepSeek V4 Pro conditions heavily on what the **first request** shows it. The
@@ -95,6 +125,13 @@ until now.
   `reasoning-delta` chunks (1s throttle), so the charts and the bar move
   while the model thinks — not just after each turn. Counts are additive, so
   window aggregates stay exact.
+- **CoT leak / stall guards (0.2.9)** — the monitor also receives the **visible
+  text channel** (text-delta → `/api/push-text`), so it can flag the two
+  degradations the reasoning fingerprint alone can't see: `text_leak` (thinking-style
+  prose leaking into the visible body — high text volume AND a high
+  `let me`/(we+let me) ratio) and `streaming_stall` (reasoning goes quiet while
+  text keeps flowing). **Alert-only**, never auto-intervenes; per-session `cot`
+  counters + `guard_triggered` events show up in the panel / dashboard.
 - **Intervention master switch** — a toggle in the panel header turns
   interventions on/off at runtime (persisted across restarts); off = monitor-only,
   no interruptions. The panel shows a hint: keep interventions on **only when
@@ -129,8 +166,9 @@ until now.
 # 1) install the web plugin into your web profile (dsh CLI = pnpm forwarder)
 dsh plugin --profile web add @a9i5k4/dsh-anchored-monitor
 
-# 2) start the monitor process
-npx anchored-monitor --profile demo
+# 2) start the monitor process (default profile = production-safe `default`;
+#    `demo` is only for the accelerated L1→L2→L3 demo)
+npx anchored-monitor
 
 # 3) restart DeepSeek Harness (host bundle) and refresh the web GUI
 ```
@@ -171,6 +209,7 @@ The monitor process exposes (default `http://127.0.0.1:9301`):
 | GET | `/api/sessions/:id` | full snapshot (history / interventions / baseline) |
 | GET | `/api/events?sessionId=&limit=` | tail of the experiment JSONL |
 | POST | `/api/push` | push a reasoning block `{sessionId, text, sequence?, timestamp?}` |
+| POST | `/api/push-text` | push a visible text chunk `{sessionId, text, sequence?, timestamp?}` (CoT guards) |
 | POST | `/api/sessions/:id/ack` | acknowledge an intervention |
 | POST | `/api/sessions/:id/reset` | trigger a manual L2 reset |
 | GET | `/api/stream` | SSE event stream |

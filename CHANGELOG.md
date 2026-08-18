@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9] - 2026-08-18
+
+### Added
+
+- **CoT leak / reasoning-stall guards** — the monitor now also receives the **visible text channel** (text-delta pushed to /api/push-text), so it can watch for the two degradations the reasoning fingerprint alone can't see:
+  - `text_leak` — thinking-style prose leaking into the visible body: fires when text characters in the surge window exceed `text_surge_chars` AND the text fingerprint ratio (`let me` / (we + let me)) is >= `text_leak_ratio`. This is the long-context signature where the model starts narrating its reasoning as regular reply text.
+  - `streaming_stall` — the reasoning channel goes quiet (`reasoning_stall_ms`) while the session is still emitting text (`text_active_window_ms`) — the model keeps talking but has stopped sending real chain-of-thought.
+  - Both are **alert-only** (new `guard_triggered` events + per-session `cot` counters in dashboard/snapshot); they never auto-intervene. Fully configurable under the new **CoT guard** settings group (enabled / stall / windows / char threshold / ratio / cooldown).
+- **Intervention execution diagnostics** — the host now logs poll health + every executed intervention to the DSH log (30s-throttled poll summary: sessions seen, sessions with pending interventions, last error); `ackSignal` surfaces HTTP/network failures instead of silently swallowing. `executeSignal` acks `failed:...` when delivery via agents.followup did not happen instead of claiming `executed`.
+
+### Changed
+
+- **Default config profile is now `default` (production-safe)** instead of `demo`. The demo profile (1500/800ms cooldowns, 5 L2 attempts) was the default, causing very frequent interruptions; default.yaml uses L1=30000 / L2=120000 / L3=0 / attempts 2. `--profile default` is idempotent (config-loader skips the duplicate merge). The settings-page profile selector defaults to `default` and its description warns that `demo` is only for accelerated testing.
+
+### Fixed
+
+- `submitContinuation` returns whether the continuation was actually delivered; `executeSignal` reflects that in the ack status instead of always `executed`.
+
+## [0.2.8] - 2026-08-18
+
+### Added
+
+- **Pairing clarification** in the READMEs: this monitor does **not** require a forced install of `xiaobright/dsh-anchored-standard` — it judges sessions purely by the `we / let's / let me` fingerprint, never by a preset's name. Any preset implementing the anchored-standard discipline (first-turn Minimal persona + collective "we" planning) works, including renamed derivatives like **梁神模式 / liangshen**. The L2 reset payload is self-contained (Minimal 46-char persona + `bash`/`str_replace_editor` shipped in this plugin's own config).
+- **Model-specific intervention advice** in the READMEs + the in-panel hint: `ℹ Tip: keep interventions on only for DeepSeek V4 Pro 0813; turn them off (monitor-only) for other models.` (The on/off hint text was introduced in 0.2.7; 0.2.8 surfaces the same advice in the README).
+
 ## [0.2.7] - 2026-08-18
 
 ### Added

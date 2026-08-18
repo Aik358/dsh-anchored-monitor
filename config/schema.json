@@ -260,6 +260,25 @@
         }
       }
     },
+    "guards": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "cot": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "reasoning_stall_ms": { "type": "number", "minimum": 0 },
+            "text_active_window_ms": { "type": "number", "minimum": 0 },
+            "text_surge_window_ms": { "type": "number", "minimum": 0 },
+            "text_surge_chars": { "type": "number", "minimum": 0 },
+            "text_leak_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "cooldown_ms": { "type": "number", "minimum": 0 }
+          }
+        }
+      }
+    },
     "intervention": {
       "type": "object",
       "required": [

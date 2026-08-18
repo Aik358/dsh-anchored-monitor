@@ -57,10 +57,13 @@ export async function loadConfig(opts: ConfigLoadOptions): Promise<LoadedConfig>
 
   if (opts.profile) {
     profileName = opts.profile.replace(/\.yaml$/i, '')
-    const profPath = join(opts.root, 'config', profileName + '.yaml')
-    const profRaw = await readFile(profPath, 'utf8')
-    config = deepMerge(config, parseYaml(profRaw))
-    sources.push(profPath)
+    // 'default' 就是主配置本身(不传 --profile 也是它), 跳过重复合并, 幂等
+    if (profileName !== 'default') {
+      const profPath = join(opts.root, 'config', profileName + '.yaml')
+      const profRaw = await readFile(profPath, 'utf8')
+      config = deepMerge(config, parseYaml(profRaw))
+      sources.push(profPath)
+    }
   }
   if (opts.overrides) config = deepMerge(config, opts.overrides)
 

@@ -188,7 +188,7 @@
         for (var i = Math.max(0, n - 10); i < n; i++) {
           var l = eventLabel(state.events[i])
           if (!l) continue
-          var cls = state.events[i].type === 'intervention_triggered' ? ' k-iv' : state.events[i].type === 'threshold_check' ? ' k-th' : ''
+          var cls = state.events[i].type === 'intervention_triggered' ? ' k-iv' : state.events[i].type === 'threshold_check' ? ' k-th' : state.events[i].type === 'guard_triggered' ? ' k-guard' : ''
           rows.push('<div class="am-event' + cls + '"><span class="am-mono">' + fmtTime(state.events[i].timestamp) + '</span><span>' + esc(l) + '</span></div>')
         }
         eventsEl.innerHTML = rows.length ? rows.join('') : '<div class="am-empty">' + esc(TEXTS.noData) + '</div>'
@@ -214,8 +214,11 @@
           + ' · ' + TEXTS.cooldown + ' L2 ' + (state.cooldowns.L2_ms / 1000).toFixed(0) + 's'
           + ' · ' + TEXTS.attempts + ' ' + (snap ? snap.l2Attempts : 0) + '/' + state.maxL2Attempts
           + (state.interventionsEnabled === false ? ' · ' + TEXTS.monitorOnly : '')
+          + (snap && snap.cot && snap.cot.alerts > 0 ? ' · ' + TEXTS.cotStall + '/泄漏 ⚠ ' + snap.cot.alerts : '')
       }
-      panelEl.querySelector('[data-am=foot]').textContent = 'config ' + state.configHash + ' · ' + state.monitorUrl
+      panelEl.querySelector('[data-am=foot]').textContent = 'config ' + state.configHash
+        + (snap && snap.cot ? ' · text ' + snap.cot.textChars + '字/' + snap.cot.textChunks + '块' : '')
+        + ' · ' + state.monitorUrl
       drawChart()
     }
 

@@ -12,6 +12,15 @@ export interface ReasoningBlock {
   source: 'log' | 'ipc' | 'replay' | 'demo'
 }
 
+/** 一个 text 信道块(可见正文的流式增量)——供 CoT 泄漏/停摆守卫消费 */
+export interface TextChunkBlock {
+  sessionId: string
+  timestamp: number
+  sequence: number          // 会话内独立的 text 序号(与 reasoning 序号互补成双通道计数)
+  text: string              // text 增量文本
+  source: 'ipc'
+}
+
 /** 特征向量: 所有特征均可配置 */
 export interface FeatureVector {
   counts: Record<string, number>
@@ -202,6 +211,22 @@ export interface DashboardConfig {
   web_root: string
 }
 
+export interface CotGuardConfig {
+  enabled: boolean
+  /** 停摆: 会话已见过 reasoning 块, 但超过该时长没有新块, 且 text 信道仍在出内容 → stream_stall 告警 */
+  reasoning_stall_ms: number
+  /** “会话仍在出内容”判定: 最近一个 text chunk 落在该窗口内才算活跃(配合停摆判定) */
+  text_active_window_ms: number
+  /** 泄漏判定滑动窗口: 统计该窗口内的 text 字符数与指纹密度 */
+  text_surge_window_ms: number
+  /** 泄漏: 窗口内 text 字符数超过该阈值才进入指纹判定 */
+  text_surge_chars: number
+  /** 泄漏: 窗口内 text 的“思考样式”指纹比(负向词数/(正向+负向))≥ 该值 → text_leak 告警 */
+  text_leak_ratio: number
+  /** 同种告警最小间隔(防刷屏) */
+  cooldown_ms: number
+}
+
 export interface MonitorConfig {
   version: string
   session_id_pattern: string
@@ -215,6 +240,7 @@ export interface MonitorConfig {
   bands: BandsConfig
   threshold: ThresholdConfig
   intervention: InterventionConfig
+  guards: { cot: CotGuardConfig }
   experiment_log: ExperimentLogConfig
   ipc: { protocol: 'http'; host: string; port: number }
   dashboard: DashboardConfig
@@ -278,9 +304,26 @@ export type MonitorEvent =
     }
   | { type: 'ack_received'; sessionId: string; timestamp: number; level: InterventionLevel; status: string }
   | { type: 'intervention_toggle'; timestamp: number; enabled: boolean }
+  | { type: 'text_chunk_received'; sessionId: string; timestamp: number; sequence: number; textLength: number }
+  | {
+      type: 'guard_triggered'
+      sessionId: string
+      timestamp: number
+      guard: 'streaming_stall' | 'text_leak'
+      detail: string
+    }
   | { type: 'session_end'; sessionId: string; timestamp: number; reason: string }
 
 /* ==================== 会话公开状态(仪表盘 API) ==================== */
+
+export interface CotGuardState {
+  textChars: number
+  textChunks: number
+  alerts: number
+  stallAlerts: number
+  leakAlerts: number
+  lastAlertAt: number | null
+}
 
 export interface SessionSnapshot {
   sessionId: string
@@ -311,6 +354,7 @@ export interface SessionSnapshot {
     windowAggregate: { positive: number; negative: number; neutral: number }
   }[]
   cooldowns: { L1: number; L2: number; L3: number }
+  cot: CotGuardState
 }
 
 /** 仪表盘 /api/sessions 的会话摘要 */
@@ -324,4 +368,5 @@ export interface SessionSummary {
   interventions: number
   lastActivityAt: number
   source: 'log_tail' | 'ipc_push'
+  cot: CotGuardState
 }

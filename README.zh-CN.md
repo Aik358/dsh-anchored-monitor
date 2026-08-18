@@ -34,6 +34,29 @@
 
 > 设置页可微调全部参数——改乱了？一键**恢复默认**。
 
+## 需要配合哪种模式？
+
+**不需要强制安装 [dsh-anchored-standard](https://github.com/xiaobright/dsh-anchored-standard)。**
+
+监控端从不检查预设的*名字*。它实时读取每个会话的思维链（`~/.dsh/sessions/*/events.jsonl`），
+纯按 `we / let's / let me` 指纹给 reasoning 块打分分波段（spec < 0.2 / mixed 0.2–0.5 / react ≥ 0.5）。
+所以**任何实现了"锚定纪律"的预设都能配合**——首轮用 Minimal persona 锚定
+（46 字符句 + `bash`/`str_replace_editor` 双工具），随后保持集体式 "we" 规划、禁 "let me"。
+改名的衍生预设也没问题：**梁神模式（liangshen）**、以及一切基于 anchored-standard 的模式都可以。
+L2 重置载荷完全自包含（Minimal 46 字符句 + 双工具都随本插件自带配置下发），运行时不从任何其他仓库导入。
+
+> ⚠️ 一个提醒：如果会话**一开始就没锚定**，它会一直待在 react 带、反复触发 L2——
+> 那是"打架"不是监控。请把干预保持 **关闭（只监控）**，除非你在本鞭子专门调校的模型上。
+
+**干预开关怎么设** —— 鞭子专为 **DeepSeek V4 Pro 0813** 调校：
+
+- ✅ DeepSeek V4 Pro 0813 → 干预 **开启**（推荐）。
+- ❌ 其他模型 → 干预 **关闭（只监控）**——让它安安静静当个实时仪表。
+
+插件的浮层面板与设置页都内置了这条提示，使用者打开就能看到：
+
+> ℹ 提示：干预模式建议仅在 DeepSeek V4 Pro 0813 时开启，其他模型请关闭（只监控）。
+
 ## 为什么做这个
 
 DeepSeek V4 Pro 强烈依赖**首轮请求**展示给它的内容来选择执行轨迹。社区实测:
@@ -72,6 +95,7 @@ DeepSeek V4 Pro 强烈依赖**首轮请求**展示给它的内容来选择执行
 - **零操作自动启动** — host 插件在 DSH 启动时自动拉起监控进程(15 秒看门狗保活), 用户无需任何操作。
 - **实时流式心电图** — host 订阅 `llm/stream` 的 `reasoning-delta`, 按 1 秒节流实时推送:
   模型一边想, 图表与悬浮条一边跳(计数线性可加, 窗口聚合精确等价), 不再等整轮结束。
+- **CoT 泄漏/停摆守卫(0.2.9)** — 监控进程现在也接收**可见正文信道**(text-delta → /api/push-text), 能捕捉 reasoning 指纹单独看不到的两种退化: `text_leak`(思考样式正文泄漏——正文高音量 且 `let me`/(we+let me) 指纹比高)与 `streaming_stall`(reasoning 静默但正文仍在输出)。**仅告警、绝不自动干预**; 每会话 `cot` 计数与 `guard_triggered` 事件在面板/仪表盘可见。
 - **干预总开关** — 面板标题栏一键开关(持久化): 关闭=只监控不打断。面板会提示:
   干预建议仅在 **DeepSeek V4 Pro 0813** 时开启, 其他模型请关闭。
 - **完整设置页** — 设置页内可调整全部技术参数(窗口/词典/评分权重/波段边界/阈值/冷却/
@@ -97,7 +121,7 @@ DeepSeek V4 Pro 强烈依赖**首轮请求**展示给它的内容来选择执行
 dsh plugin --profile web add @a9i5k4/dsh-anchored-monitor
 
 # 2) 启动监控进程
-npx anchored-monitor --profile demo
+npx anchored-monitor   # 默认 profile=生产安全 default; demo 仅用于加速演示 L1→L2→L3
 
 # 3) 重启 DeepSeek Harness(host bundle), 刷新 Web GUI
 ```
@@ -135,6 +159,7 @@ dsh-anchored-standard 配合完成首轮锚定)。
 | GET | `/api/sessions/:id` | 完整快照(历史/干预/基线) |
 | GET | `/api/events?sessionId=&limit=` | 实验 JSONL 尾读 |
 | POST | `/api/push` | 推送 reasoning 块 `{sessionId, text, sequence?, timestamp?}` |
+| POST | `/api/push-text` | 推送可见正文块 `{sessionId, text, sequence?, timestamp?}`(CoT 守卫) |
 | POST | `/api/sessions/:id/ack` | 干预执行确认 |
 | POST | `/api/sessions/:id/reset` | 手动 L2 重置 |
 | GET | `/api/stream` | SSE 事件流 |

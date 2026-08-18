@@ -100,6 +100,23 @@ intervention:
   bootstrap_tools: ["bash", "str_replace_editor"]
   bootstrap_system_prompt: "You are a helpful software engineer assistant."
 
+# CoT 泄漏/停摆守卫(0.2.9): 监控进程除了 reasoning 信道, 还接收宿主推来的
+# text 信道可见正文增量, 用于两类异常检测(仅告警, 不自动干预):
+#   · stream_stall — 会话已见过 reasoning 块, 但超过 reasoning_stall_ms 没有新块,
+#     且 text 信道上仍在持续输出(text_active_window_ms 内收到新 text) → 推理信道停摆,
+#     模型疑似把思考全部转入正文叙述(与长上下文退化同源)。
+#   · text_leak — 窗口内 text 字符数超过 text_surge_chars, 且文本指纹密度
+#     (let me 等负向词占(正+负)比例)≥ text_leak_ratio → 思考样式内容泄漏进可见正文。
+guards:
+  cot:
+    enabled: true
+    reasoning_stall_ms: 15000
+    text_active_window_ms: 15000
+    text_surge_window_ms: 30000
+    text_surge_chars: 5000
+    text_leak_ratio: 0.6
+    cooldown_ms: 30000
+
 experiment_log:
   path: "./logs/experiment.jsonl"
   max_file_size_mb: 50

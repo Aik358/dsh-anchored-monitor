@@ -188,6 +188,18 @@
           ]
         },
         {
+          group: 'guards', title: T('CoT 守卫', 'CoT guard'), desc: T('监控 text 信道(可见正文)的两类退化——思考样式泄漏进正文(text_leak)与推理信道停摆但仍出正文(streaming_stall)。仅告警、不自动干预。', 'Watches the text channel (visible body) for two degradations — thinking-style text leaking into the reply (text_leak) and reasoning stalling while text keeps flowing (streaming_stall). Alert-only.'),
+          fields: [
+            F('cotEnabled', T('启用守卫', 'Enable guard'), T('关闭后不再接收/统计 text 信道', 'off = no text-channel tracking'), 'toggle', 'override.guards.cot.enabled'),
+            F('stallMs', T('停摆判定(ms)', 'reasoning_stall_ms'), T('无新 reasoning 块超过该时长即判停摆(需 text 仍在出内容)', 'no reasoning block this long = stall (text must still flow)'), n, 'override.guards.cot.reasoning_stall_ms', { min: 1000, max: 3600000 }),
+            F('textActiveMs', T('活跃窗口(ms)', 'text_active_window_ms'), T('最近 text 块在该窗口内才算"仍在出内容"', 'text within this window counts as active'), n, 'override.guards.cot.text_active_window_ms', { min: 1000, max: 120000 }),
+            F('surgeMs', T('泄漏窗口(ms)', 'text_surge_window_ms'), T('统计该窗口内的 text 字符数', 'chars counted over this window'), n, 'override.guards.cot.text_surge_window_ms', { min: 1000, max: 300000 }),
+            F('surgeChars', T('泄漏字符阈值', 'text_surge_chars'), T('窗口内 text 超该阈值才进入指纹判定', 'window chars above this enters fingerprint check'), n, 'override.guards.cot.text_surge_chars', { min: 500, max: 100000 }),
+            F('leakRatio', T('泄漏指纹比', 'text_leak_ratio'), T('text 中 let me/(we+let me) ≥ 该值判泄漏 (default 0.6)', 'text negative/(pos+neg) ≥ this = leak (default 0.6)'), n, 'override.guards.cot.text_leak_ratio', { min: 0.1, max: 1, step: 0.05 }),
+            F('cotCooldown', T('告警冷却(ms)', 'cooldown_ms'), T('同种告警最小间隔, 防刷屏', 'min interval between same-kind alerts'), n, 'override.guards.cot.cooldown_ms', { min: 1000, max: 3600000 })
+          ]
+        },
+        {
           group: 'lexicon', title: T('词典(指纹)', 'Lexicon (fingerprint)'), desc: T('格式: 每行 "term: weight"。正向=spec 轨迹(we/let\'s); 负向只放 react 指纹(let me); i will/i need 等规划标记放中性。', 'Format: "term: weight" per line. positive=spec trajectory; negative=react fingerprints only; planning markers go neutral.'),
           fields: [
             F('lexPos', T('正向词', 'positive'), T('we: 2.0 这类, 支持词边界匹配', 'word-boundary matched'), 'textarea', 'override.features.lexicon.positive', { lines: true }),
@@ -334,7 +346,7 @@
       var values = {}
       values['host.autoStart'] = host.autoStart
       values['host.enabled'] = host.enabled
-      values['host.profile'] = host.profile || 'demo'
+      values['host.profile'] = host.profile || 'default'
       values['host.monitorUrl'] = host.monitorUrl || 'http://127.0.0.1:9301'
       values['override.dashboard.port'] = getPath(eff, 'dashboard.port') ?? 9301
       values['override.window.type'] = getPath(eff, 'window.type') ?? 'sliding'
@@ -369,6 +381,13 @@
       values['override.intervention.hint_templates'] = (getPath(eff, 'intervention.hint_templates') ?? []).join('\n')
       values['override.intervention.bootstrap_tools'] = arrToComma(getPath(eff, 'intervention.bootstrap_tools') ?? ['bash', 'str_replace_editor'])
       values['override.intervention.bootstrap_system_prompt'] = getPath(eff, 'intervention.bootstrap_system_prompt') ?? 'You are a helpful software engineer assistant.'
+      values['override.guards.cot.enabled'] = getPath(eff, 'guards.cot.enabled') !== false
+      values['override.guards.cot.reasoning_stall_ms'] = getPath(eff, 'guards.cot.reasoning_stall_ms') ?? 15000
+      values['override.guards.cot.text_active_window_ms'] = getPath(eff, 'guards.cot.text_active_window_ms') ?? 15000
+      values['override.guards.cot.text_surge_window_ms'] = getPath(eff, 'guards.cot.text_surge_window_ms') ?? 30000
+      values['override.guards.cot.text_surge_chars'] = getPath(eff, 'guards.cot.text_surge_chars') ?? 5000
+      values['override.guards.cot.text_leak_ratio'] = getPath(eff, 'guards.cot.text_leak_ratio') ?? 0.6
+      values['override.guards.cot.cooldown_ms'] = getPath(eff, 'guards.cot.cooldown_ms') ?? 30000
       // 内置研究默认词典: 监控离线(effective 缺失)时表单仍显示有效词典, 防止空保存清空指纹
       var DEFAULT_LEX = {
         positive: ['we: 2', "let's: 1.5", "we'll: 1.2", 'we need: 1.2', 'our: 0.8'],
@@ -499,7 +518,7 @@
         var hostPatch = {
           autoStart: values['host.autoStart'] !== false,
           enabled: values['host.enabled'] !== false,
-          profile: values['host.profile'] || 'demo',
+          profile: values['host.profile'] || 'default',
           monitorUrl: values['host.monitorUrl'] || 'http://127.0.0.1:9301'
         }
         var res = await fetch('/api/anchored-monitor/settings', {
