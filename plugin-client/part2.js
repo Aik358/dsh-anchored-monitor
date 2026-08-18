@@ -128,17 +128,28 @@
       '.am-dot{width:7px;height:7px;border-radius:50%;flex:none}',
       // ── 梗皮肤(meme「滑动变祖器」) ──
       '.am-bar.am-bar-meme{width:352px;max-width:calc(100vw - 28px)}',
-      '.am-bar-face{width:28px;height:28px;border-radius:8px;flex:none;object-fit:cover;border:1px solid var(--am-border-strong);background:var(--am-card)}',
-      '.am-bar-face.f-spec{animation:am-face-spec 1.6s ease-in-out infinite;box-shadow:0 0 10px rgba(22,163,74,0.7)}',
-      '.am-bar-face.f-mixed{animation:am-face-mixed .9s ease-in-out infinite;box-shadow:0 0 10px rgba(217,119,6,0.75)}',
-      '.am-bar-face.f-react{animation:am-face-react .5s ease-in-out infinite;box-shadow:0 0 13px rgba(220,38,38,0.9)}',
-      '.am-bar-face.f-unknown{opacity:.5;filter:grayscale(.65)}',
+      '.am-bar-meme .am-bar-track{position:relative;min-width:84px;max-width:120px}',
+      '.am-bar-meme .am-bar-ticker{max-width:96px}',
+      '.am-bar-bubble{position:absolute;bottom:calc(100% + 5px);width:34px;height:34px;padding:2px;border-radius:10px;',
+      'background:var(--am-bg-solid);border:1px solid var(--am-border-strong);box-shadow:var(--am-shadow);',
+      'display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;',
+      'transition:left .5s cubic-bezier(.4,0,.2,1)}',
+      '.am-bar-bubble::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);',
+      'border:5px solid transparent;border-top-color:var(--am-border-strong)}',
+      '.am-bar-bubble img{width:100%;height:100%;border-radius:7px;object-fit:cover;display:block}',
+      '.am-bar-bubble img.f-spec{animation:am-face-spec 1.6s ease-in-out infinite;box-shadow:0 0 10px rgba(22,163,74,0.7)}',
+      '.am-bar-bubble img.f-mixed{animation:am-face-mixed .9s ease-in-out infinite;box-shadow:0 0 10px rgba(217,119,6,0.75)}',
+      '.am-bar-bubble img.f-react{animation:am-face-react .5s ease-in-out infinite;box-shadow:0 0 13px rgba(220,38,38,0.9)}',
+      '.am-bar-bubble img.f-unknown{opacity:.5;filter:grayscale(.65)}',
       '@keyframes am-face-spec{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}',
       '@keyframes am-face-mixed{0%,100%{transform:scale(1)}50%{transform:scale(1.1) rotate(-2deg)}}',
       '@keyframes am-face-react{0%,100%{transform:scale(1)}25%{transform:scale(1.14) rotate(-3deg)}75%{transform:scale(1.08) rotate(2deg)}}',
       '.am-meme-chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;flex:none;white-space:nowrap;color:var(--am-text);border:1px solid var(--am-border-strong);background:var(--am-card)}',
-      '.am-bar-meme .am-bar-track{min-width:76px;max-width:112px}',
-      '.am-bar-meme .am-bar-ticker{max-width:96px}'
+      // ── 面板干预提示行 ──
+      '.am-iv-hint{margin:8px 13px 0;padding:6px 10px;border-radius:9px;font-size:11px;line-height:1.55;',
+      'color:var(--am-muted);background:rgba(77,107,254,0.07);border:1px solid rgba(77,107,254,0.22)}',
+      '.am-iv-hint .am-hint-ico{color:var(--am-blue);font-weight:700;margin-right:5px}',
+      '.am-iv-hint.off{background:rgba(148,148,155,0.06);border-color:var(--am-border)}'
     ].join('\n')
 
     var styleInjected = false
@@ -204,15 +215,17 @@
     // ── 变阻器条 ──
     function barHtml() {
       if (state.skin === 'meme') {
-        return '<img class="am-bar-face" data-am="face" alt="' + esc(TEXTS.memeTitle) + '">'
-          + '<span class="am-meme-chip" data-am="title">' + esc(TEXTS.memeTitle) + '</span>'
+        return '<div class="am-bar-ico">' + ICON_RADAR + '</div>'
+          + '<i class="am-bar-dot am-band-unknown" data-am="dot"></i>'
           + '<div class="am-bar-track">'
+          + '<div class="am-bar-bubble" data-am="bubble"><img class="am-bar-face" data-am="face" alt="' + esc(TEXTS.memeTitle) + '"></div>'
           + '<div class="am-bar-fill" data-am="fill"></div>'
           + '<span class="am-bar-tick" style="left:' + (state.thresholds.specMax * 100).toFixed(0) + '%"></span>'
           + '<span class="am-bar-tick" style="left:' + (state.thresholds.reactMin * 100).toFixed(0) + '%"></span>'
           + '<i class="am-bar-knob" data-am="knob"></i>'
           + '</div>'
           + '<span class="am-bar-score am-mono" data-am="score">—</span>'
+          + '<span class="am-meme-chip" data-am="title">' + esc(TEXTS.memeTitle) + '</span>'
           + '<span class="am-bar-ticker" data-am="ticker"></span>'
       }
       return '<div class="am-bar-ico">' + ICON_RADAR + '</div>'
@@ -260,6 +273,15 @@
         face.src = liangUrl(score)
         face.className = 'am-bar-face f-' + band
         face.title = TEXTS.memeTitle + ' · ' + (score == null ? '—' : score.toFixed(1)) + ' · ' + band
+      }
+      // 表情气泡: 锚在强度圆圈(knob)上方, 随强度左右滑动(边界内钳制)
+      var bubble = barEl.querySelector('[data-am=bubble]')
+      if (bubble) {
+        var trackEl = barEl.querySelector('.am-bar-track')
+        var tw = trackEl ? trackEl.offsetWidth : 100
+        var px = pct / 100 * tw
+        px = Math.max(17, Math.min(tw - 17, px))
+        bubble.style.left = px + 'px'
       }
       scoreEl.textContent = score == null ? '—' : score.toFixed(1)
       if (!state.monitorOnline) {

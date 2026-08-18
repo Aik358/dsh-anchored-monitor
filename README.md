@@ -63,9 +63,11 @@ until now.
   viewport-adaptive) — no size jumping. **zh/en language toggle** in the panel
   header and settings.
 - **Two skins** — the default **Serious** rheostat bar, or the **Meme** skin
-  ("滑动变祖器 / Liang-o-meter"): a small square flips through Liang Wenfeng
-  faces — from *focused* (humble) to *slacking* (emperor) — as thinking
-  intensity rises, pulsing with the band color. Switch in the settings page
+  ("滑动变祖器 / Liang-o-meter"): a small speech-bubble floats **above the
+  intensity knob** and slides with it, flipping through Liang Wenfeng faces —
+  from *focused* (humble) to *slacking* (emperor) — as thinking intensity
+  rises, pulsing with the band color. The face images are **embedded in the
+  client bundle** (base64) so they always load. Switch in the settings page
   (saved locally). Face assets from
   [Lichtspektrum/liang-intensity-calibrator](https://github.com/Lichtspektrum/liang-intensity-calibrator)
   (MIT).
@@ -77,7 +79,8 @@ until now.
   window aggregates stay exact.
 - **Intervention master switch** — a toggle in the panel header turns
   interventions on/off at runtime (persisted across restarts); off = monitor-only,
-  no interruptions — handy when switching models.
+  no interruptions. The panel shows a hint: keep interventions on **only when
+  using DeepSeek V4 Pro 0813**; turn them off for other models.
 - **Full settings page** — every parameter (window, lexicon, scoring weights,
   band boundaries, thresholds, cooldowns, hint templates, bootstrap pair, log
   rotation) is editable in the DSH settings page with explanations and a

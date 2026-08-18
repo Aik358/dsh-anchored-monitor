@@ -57,14 +57,16 @@ window.__ModuleLoader__.load({
         welcomeSub: T('一句话：这是给 DeepSeek V4 Pro 加的一根鞭子——从 We need / I will 的高专注模式跌落到 let me 的低效模式时，就抽它一鞭让它改回去。', 'One sentence: a whip for DeepSeek V4 Pro — when it falls from the focused We need / I will mode into the scattered let me mode, the whip cracks and pulls it back.'),
         welcomeStep1: T('① 左侧栏底部点「锚定监控」打开实时面板', '① Open the live panel from the left sidebar footer'),
         welcomeStep2: T('② 收起时是变阻器条：滑条=思考强度，右侧=实时日志', '② Collapsed: rheostat bar — slider = thinking intensity, right = live log'),
-        welcomeStep3: T('③ 面板右上可一键关闭干预(只监控)；设置页可调全部参数', '③ Toggle interventions off in the panel; tune every parameter in settings'),
+        welcomeStep3: T('③ 面板右上可一键关闭干预(只监控)；干预建议仅在 DeepSeek V4 Pro 0813 时开启', '③ Toggle interventions off in the panel (monitor-only); recommended only for DeepSeek V4 Pro 0813'),
         welcomeBtn: T('开始使用', 'Get started'),
+        ivHintOn: T('提示: 干预模式建议仅在 DeepSeek V4 Pro 0813 时开启, 其他模型请关闭(只监控)', 'Tip: keep interventions on only for DeepSeek V4 Pro 0813; turn them off (monitor-only) for other models'),
+        ivHintOff: T('提示: 仅监控模式 — 除 DeepSeek V4 Pro 0813 外建议保持关闭', 'Tip: monitor-only — recommended unless you are on DeepSeek V4 Pro 0813'),
         skin: T('皮肤', 'Skin'),
         skinDesc: T('仅保存在本机浏览器, 即时生效。表情素材来自 Lichtspektrum/liang-intensity-calibrator (MIT)。', 'Saved locally in your browser, applies instantly. Face assets from Lichtspektrum/liang-intensity-calibrator (MIT).'),
         skinSerious: T('严肃皮肤', 'Serious skin'),
         skinSeriousDesc: T('默认皮肤: 理性的变阻器条, 不整活。', 'Default: the sober rheostat bar.'),
         skinMeme: T('梗皮肤', 'Meme skin'),
-        skinMemeDesc: T('变阻器条变身「滑动变祖器」: 小方块按思考强度从夯到拉切换梁文锋表情并脉冲发光。', 'The bar becomes the "Liang-o-meter": a small square flips Liang Wenfeng faces from focused to slacking as intensity rises, with a pulsing glow.'),
+        skinMemeDesc: T('变阻器条变身「滑动变祖器」: 表情小气泡浮在强度圆圈上方, 随强度从夯到拉切换梁文锋表情并脉冲发光。', 'The bar becomes the "Liang-o-meter": a face bubble floats above the intensity knob, flipping Liang Wenfeng faces from focused to slacking as intensity rises, with a pulsing glow.'),
         memeTitle: T('滑动变祖器', 'Liang-o-meter')
       }
     }
@@ -78,7 +80,8 @@ window.__ModuleLoader__.load({
       emit()
     }
     function toggleLang() { setLang(!langZh) }
-    var ASSETS_BASE = '/api/anchored-monitor/assets/liang/'
+    // 表情素材直接以 base64 data URI 内嵌(LIANG_DATA 由 assemble 脚本从 assets/liang/*.png 生成),
+    // 不依赖任何网络/路由加载 — 本地永远可用。
     function setSkin(skin) {
       state.skin = skin === 'meme' ? 'meme' : 'serious'
       try { localStorage.setItem(SKIN_KEY, state.skin) } catch (e) {}
@@ -90,8 +93,11 @@ window.__ModuleLoader__.load({
       var pct = Math.max(0, Math.min(100, Number(score)))
       return Math.round(pct / 100 * 5)
     }
+    function liangData(i) {
+      return (LIANG_DATA || {})[i] || ''
+    }
     function liangUrl(score) {
-      return ASSETS_BASE + 'liang-' + liangIdx(score) + '.png'
+      return liangData(liangIdx(score))
     }
     var BAND_NAMES = { spec: 'spec', mixed: 'mixed', react: 'react', unknown: 'unknown' }
     var PHASE_NAMES = { healthy: 'healthy', warning: 'warning', critical: 'critical', restart: 'restart' }

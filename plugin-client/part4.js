@@ -173,7 +173,7 @@
           ]
         },
         {
-          group: 'intervention', title: T('干预策略', 'Intervention'), desc: T('L1 温和引导(措辞纪律: 只能建议式, 命令式会把 we 轨迹打回 let me); L2 强制重置(persona=Minimal 46 字符句 + 双工具); L3 建议重启。', 'L1 suggestive hint (never imperative); L2 minimal persona + bootstrap pair; L3 restart advice.'),
+          group: 'intervention', title: T('干预策略', 'Intervention'), desc: T('L1 温和引导(措辞纪律: 只能建议式, 命令式会把 we 轨迹打回 let me); L2 强制重置(persona=Minimal 46 字符句 + 双工具); L3 建议重启。提示: 干预建议仅在 DeepSeek V4 Pro 0813 时开启, 其他模型请关闭(只监控)。', 'L1 suggestive hint (never imperative); L2 minimal persona + bootstrap pair; L3 restart advice. Tip: enable interventions only for DeepSeek V4 Pro 0813; keep them off (monitor-only) otherwise.'),
           fields: [
             F('l1ms', T('L1 冷却(ms)', 'L1 cooldown'), T('冷却期内不重复触发同级别', 'per-level cooldown'), n, 'override.intervention.cooldowns.L1_ms', { min: 0, max: 3600000 }),
             F('l2ms', T('L2 冷却(ms)', 'L2 cooldown'), T('重置后静默期', 'silence after reset'), n, 'override.intervention.cooldowns.L2_ms', { min: 0, max: 3600000 }),
@@ -404,7 +404,7 @@
         + '<div class="am-skin-card-head"><span class="am-skin-check">' + (state.skin === 'meme' ? '✓' : '') + '</span><span class="am-skin-title">' + esc(TEXTS.skinMeme) + '</span></div>'
         + '<div class="am-skin-desc">' + esc(TEXTS.skinMemeDesc) + '</div>'
         + '<div class="am-skin-faces">'
-        + [0, 1, 2, 3, 4, 5].map(function (i) { return '<img src="' + ASSETS_BASE + 'liang-' + i + '.png" alt="">' }).join('')
+        + [0, 1, 2, 3, 4, 5].map(function (i) { return '<img src="' + liangData(i) + '" alt="">' }).join('')
         + '<b>' + esc(TEXTS.memeTitle) + '</b>'
         + '</div>'
         + '</div>'

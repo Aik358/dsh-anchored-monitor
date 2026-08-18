@@ -80,6 +80,7 @@
         + '<button class="am-btn am-btn-ico" data-am="close" title="' + esc(TEXTS.close) + '">' + ICON_X + '</button>'
         + '</div></div></div>'
         + '<div class="am-offline" data-am="offline" style="display:none"></div>'
+        + '<div class="am-iv-hint" data-am="ivhint" style="display:none"><span class="am-hint-ico">ℹ</span><span data-am="ivhint-text"></span></div>'
         + '<div class="am-kpis">'
         + kpi('band', TEXTS.band, '<span data-am="bandv">—</span>', '<span data-am="bandsub">—</span>')
         + kpi('score', TEXTS.score, '<span class="am-mono" data-am="scorev">—</span><span data-am="trend">─</span>', '<span data-am="scoresub">—</span>')
@@ -141,6 +142,16 @@
       } else {
         off.style.display = 'block'
         off.textContent = state.lastError || TEXTS.startHint
+      }
+      var ivHint = panelEl.querySelector('[data-am=ivhint]')
+      if (ivHint) {
+        if (state.monitorOnline) {
+          ivHint.style.display = 'block'
+          ivHint.className = 'am-iv-hint' + (state.interventionsEnabled ? '' : ' off')
+          ivHint.querySelector('[data-am=ivhint-text]').textContent = state.interventionsEnabled ? TEXTS.ivHintOn : TEXTS.ivHintOff
+        } else {
+          ivHint.style.display = 'none'
+        }
       }
       var ratio = p && p.ratio != null ? p.ratio : null
       var bandV = panelEl.querySelector('[data-am=bandv]')
