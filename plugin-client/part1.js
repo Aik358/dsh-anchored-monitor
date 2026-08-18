@@ -49,7 +49,16 @@ window.__ModuleLoader__.load({
         ivOn: T('干预: 开', 'Intervene: ON'),
         ivOff: T('干预: 关', 'Intervene: OFF'),
         ivSwitchTitle: T('切换干预(关闭=只监控不打断)', 'Toggle interventions (off = monitor-only)'),
-        monitorOnly: T('仅监控', 'monitor-only')
+        monitorOnly: T('仅监控', 'monitor-only'),
+        updateAvailable: T('发现新版本 v{latest}(当前 v{current})', 'Update available: v{latest} (current v{current})'),
+        updateNow: T('去更新', 'Update'),
+        updateLater: T('忽略', 'Dismiss'),
+        welcomeTitle: T('欢迎使用锚定监控 👋', 'Welcome to Anchored Monitor 👋'),
+        welcomeSub: T('一句话：这是给 DeepSeek V4 Pro 加的一根鞭子——从 We need / I will 的高专注模式跌落到 let me 的低效模式时，就抽它一鞭让它改回去。', 'One sentence: a whip for DeepSeek V4 Pro — when it falls from the focused We need / I will mode into the scattered let me mode, the whip cracks and pulls it back.'),
+        welcomeStep1: T('① 左侧栏底部点「锚定监控」打开实时面板', '① Open the live panel from the left sidebar footer'),
+        welcomeStep2: T('② 收起时是变阻器条：滑条=思考强度，右侧=实时日志', '② Collapsed: rheostat bar — slider = thinking intensity, right = live log'),
+        welcomeStep3: T('③ 面板右上可一键关闭干预(只监控)；设置页可调全部参数', '③ Toggle interventions off in the panel; tune every parameter in settings'),
+        welcomeBtn: T('开始使用', 'Get started')
       }
     }
     var TEXTS = buildTexts()
@@ -93,8 +102,13 @@ window.__ModuleLoader__.load({
       selected: null,
       snapshot: null,
       events: [],
-      lastError: ''
+      lastError: '',
+      update: { current: '', latest: '', hasUpdate: false, show: false, dismissedFor: '', releaseUrl: '', npmUrl: '' },
+      welcome: false
     }
+    var WELCOME_KEY = 'dsh-anchored-monitor.welcomed'
+    var UPDATE_DISMISS_KEY = 'dsh-anchored-monitor.update.dismissed'
+    try { state.welcome = localStorage.getItem(WELCOME_KEY) !== '1' } catch (e) { state.welcome = true }
 
     function loadJson(key, fb) { try { var raw = localStorage.getItem(key); if (raw) { var v = JSON.parse(raw); if (v && typeof v === 'object') return v } } catch (e) {} return fb }
     function saveJson(key, value) { try { localStorage.setItem(key, JSON.stringify(value)) } catch (e) {} }
@@ -211,6 +225,26 @@ window.__ModuleLoader__.load({
       }
     }
 
+    // ───────────────────────── 更新检测轮询 ─────────────────────────
+    var UPDATE_POLL_MS = 12 * 3600 * 1000
+    function startUpdatePoll() {
+      var tick = function () {
+        fetch('/api/anchored-monitor/update-check', { cache: 'no-store' }).then(function (r) { return r.json() }).then(function (j) {
+          if (j && j.ok) {
+            state.update.current = j.current || ''
+            state.update.latest = j.latest || ''
+            state.update.hasUpdate = !!j.hasUpdate
+            state.update.releaseUrl = j.releaseUrl || ''
+            state.update.npmUrl = j.npmUrl || ''
+            if (j.hasUpdate && state.update.dismissedFor !== j.latest) state.update.show = true
+            emit()
+          }
+        }).catch(function () {})
+      }
+      setTimeout(tick, 6000)
+      setInterval(tick, UPDATE_POLL_MS)
+    }
+
     // ───────────────────────── React 表面 ─────────────────────────
     function SidebarButton() {
       var openState = useState(state.panelOpen)
@@ -260,6 +294,7 @@ window.__ModuleLoader__.load({
         })
       } catch (e) { console.warn('[dsh-anchored-monitor] settings slot failed', e) }
       startPolling()
+      startUpdatePoll()
       console.log('[dsh-anchored-monitor] client ready: sidebar entry + liquid-glass overlay + rheostat bar + settings page')
     }
 

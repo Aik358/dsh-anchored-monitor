@@ -1,5 +1,9 @@
 # dsh-anchored-monitor
 
+> **一句话说清：这是给 DeepSeek V4 Pro 加的一根鞭子。**
+> 当它从「We need / I will」这类高专注、高能力模式，跌落到「let me」这类
+> 发散、低专注、低效率模式时，就抽它一鞭，让它改回去。
+
 > DeepSeek Harness 实时思维链锚定监控与干预插件。
 > 持续监测每个 reasoning 块的 we / let's / let me 指纹, 让会话稳定在 spec 波段,
 > 轨迹漂移时自动分级干预把模型拉回来。

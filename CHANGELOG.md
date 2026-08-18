@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-08-18
+
+### Added
+
+- **Auto update check** — the plugin checks `Aik358/dsh-anchored-monitor` on GitHub (12h TTL) and shows an update banner in the anchored-monitor popup with **Update / Dismiss** buttons when a newer version exists.
+- **First-run welcome card** — new installs get a glass welcome card in the overlay explaining what the plugin is (one sentence: "a whip for DeepSeek V4 Pro"), how to use it (sidebar panel / rheostat bar / intervention switch) and where to configure.
+
+### Changed
+
+- Threshold lines are back on the chart: enabled rules stay solid, **disabled** rules render as faded dashed **reference** lines (labeled `· ref`) — you see the judgment boundaries without mistaking them for live triggers.
+- README now opens with a one-sentence plain-language hook (zh + en): "it's a whip for DeepSeek V4 Pro — when the model falls from the focused We need / I will mode into the scattered let me mode, the whip cracks and pulls it back."
+
 ## [0.2.2] - 2026-08-18
 
 ### Fixed

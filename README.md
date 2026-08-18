@@ -1,5 +1,10 @@
 # dsh-anchored-monitor
 
+> **In one sentence: it's a whip for DeepSeek V4 Pro.**
+> When the model falls from the focused, high-capability mode
+> ("We need…" / "I will…") into the scattered, low-focus mode ("let me…"),
+> the whip cracks — and pulls it back.
+
 > Real-time chain-of-thought anchoring monitor & intervention for DeepSeek Harness.
 > Watch the we / let's / let me fingerprint of every reasoning block, stay in the
 > spec band, and pull the model back automatically when the trajectory drifts.

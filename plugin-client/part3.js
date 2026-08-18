@@ -1,4 +1,60 @@
 
+    // ── 欢迎层 + 更新横幅 ──
+    var welcomeEl = null
+    var updateBannerEl = null
+    function ensureWelcome() {
+      if (welcomeEl || !overlayHost) return
+      welcomeEl = document.createElement('div')
+      welcomeEl.className = 'am-welcome'
+      welcomeEl.innerHTML = '<div class="am-welcome-card">'
+        + '<div class="am-welcome-title">' + ICON_RADAR + ' ' + esc(TEXTS.welcomeTitle) + '</div>'
+        + '<div class="am-welcome-sub">' + esc(TEXTS.welcomeSub) + '</div>'
+        + '<div class="am-welcome-steps">' + esc(TEXTS.welcomeStep1) + '<br>' + esc(TEXTS.welcomeStep2) + '<br>' + esc(TEXTS.welcomeStep3) + '</div>'
+        + '<div class="am-welcome-actions"><button class="am-btn am-btn-primary" data-am="welcome-go">' + esc(TEXTS.welcomeBtn) + '</button></div>'
+        + '</div>'
+      overlayHost.appendChild(welcomeEl)
+      var go = welcomeEl.querySelector('[data-am=welcome-go]')
+      if (go) {
+        go.addEventListener('click', function () {
+          try { localStorage.setItem(WELCOME_KEY, '1') } catch (e) {}
+          state.welcome = false
+          emit()
+        })
+      }
+    }
+    function removeWelcome() {
+      if (welcomeEl) { welcomeEl.remove(); welcomeEl = null }
+    }
+    function ensureUpdateBanner() {
+      if (updateBannerEl || !overlayHost) return
+      updateBannerEl = document.createElement('div')
+      updateBannerEl.className = 'am-update-banner'
+      updateBannerEl.innerHTML = '<span class="am-badge-dot"></span>'
+        + '<span>' + esc(TEXTS.updateAvailable.replace('{latest}', state.update.latest).replace('{current}', state.update.current)) + '</span>'
+        + '<button class="am-btn" data-am="update-go">' + esc(TEXTS.updateNow) + '</button>'
+        + '<button class="am-btn" data-am="update-no">' + esc(TEXTS.updateLater) + '</button>'
+      overlayHost.appendChild(updateBannerEl)
+      var go = updateBannerEl.querySelector('[data-am=update-go]')
+      if (go) go.addEventListener('click', function () { window.open(state.update.releaseUrl || 'https://github.com/Aik358/dsh-anchored-monitor/releases', '_blank', 'noopener') })
+      var no = updateBannerEl.querySelector('[data-am=update-no]')
+      if (no) no.addEventListener('click', function () {
+        try { localStorage.setItem(UPDATE_DISMISS_KEY, state.update.latest) } catch (e) {}
+        state.update.dismissedFor = state.update.latest
+        state.update.show = false
+        emit()
+      })
+    }
+    function removeUpdateBanner() {
+      if (updateBannerEl) { updateBannerEl.remove(); updateBannerEl = null }
+    }
+    function syncOverlayLayers() {
+      if (!overlayHost) return
+      if (state.welcome) ensureWelcome()
+      else removeWelcome()
+      if (state.update.show && state.update.hasUpdate) ensureUpdateBanner()
+      else removeUpdateBanner()
+    }
+
     // ── 面板 ──
     function kpi(cls, label, value, sub) {
       return '<div class="am-kpi am-kpi-' + cls + '"><div class="am-kpi-label">' + esc(label) + '</div>'
@@ -218,11 +274,17 @@
         ctx.fillStyle = hexA(BAND_COLORS[hist[i].band] || BAND_COLORS.unknown, 0.10)
         ctx.fillRect(xOf(i) - stripW / 2, pad.t, stripW, plotH)
       }
-      if (state.triggers && state.triggers.floor) {
-        dashLine(ctx, yOf(state.thresholds.safetyFloor), pad, plotW, isDark() ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.55)', 'floor ' + state.thresholds.safetyFloor)
-      }
-      if (state.triggers && state.triggers.sigma && snap.baseline && snap.baseline.mean != null) {
-        dashLine(ctx, yOf(snap.baseline.mean), pad, plotW, isDark() ? 'rgba(232,236,248,0.5)' : 'rgba(77,107,254,0.55)', 'μ ' + snap.baseline.mean.toFixed(0))
+      // 阈值线: 启用规则的线为实色; 未启用规则的线以淡色参考线显示(带 · 参考 标注),
+      // 让用户能看到判断边界, 又不会误以为它们会触发干预。
+      var floorActive = state.triggers && state.triggers.floor
+      dashLine(ctx, yOf(state.thresholds.safetyFloor), pad, plotW,
+        floorActive ? (isDark() ? 'rgba(248,113,113,0.65)' : 'rgba(220,38,38,0.55)') : (isDark() ? 'rgba(248,113,113,0.22)' : 'rgba(220,38,38,0.20)'),
+        'floor ' + state.thresholds.safetyFloor + (floorActive ? '' : ' · ref'))
+      var sigmaActive = state.triggers && state.triggers.sigma
+      if (snap.baseline && snap.baseline.mean != null) {
+        dashLine(ctx, yOf(snap.baseline.mean), pad, plotW,
+          sigmaActive ? (isDark() ? 'rgba(232,236,248,0.5)' : 'rgba(77,107,254,0.55)') : (isDark() ? 'rgba(148,148,155,0.22)' : 'rgba(77,107,254,0.18)'),
+          'μ ' + snap.baseline.mean.toFixed(0) + (sigmaActive ? '' : ' · ref'))
       }
       var grad = ctx.createLinearGradient(pad.l, 0, W - pad.r, 0)
       grad.addColorStop(0, '#4d6bfe')

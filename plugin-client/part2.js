@@ -108,6 +108,17 @@
       '.am-iv-switch{min-width:64px;justify-content:center;font-weight:600}',
       '.am-iv-on{color:#16a34a;border-color:rgba(22,163,74,0.5);background:rgba(22,163,74,0.08)}',
       '.am-iv-off{color:var(--am-muted)}',
+      '.am-welcome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:2147483050;pointer-events:auto;background:rgba(15,18,30,0.28);backdrop-filter:blur(3px)}',
+      '.am-welcome-card{width:min(440px,calc(100vw - 48px));background:var(--am-bg-solid);border:1px solid var(--am-border-strong);border-radius:18px;box-shadow:var(--am-shadow);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);padding:22px 24px;display:flex;flex-direction:column;gap:12px;animation:am-panel-in .2s cubic-bezier(.2,.8,.2,1)}',
+      '.am-welcome-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(--am-text)}',
+      '.am-welcome-sub{font-size:12.5px;line-height:1.7;color:var(--am-muted)}',
+      '.am-welcome-steps{display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--am-text);line-height:1.6}',
+      '.am-welcome-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}',
+      '.am-btn-primary{background:linear-gradient(135deg,#4d6bfe,#3b5bdb);color:#fff;border:none;font-weight:650;padding:8px 20px}',
+      '.am-btn-primary:hover{background:linear-gradient(135deg,#5a76ff,#4464e8)}',
+      '.am-update-banner{position:fixed;top:14px;right:14px;z-index:2147483040;display:flex;align-items:center;gap:10px;max-width:min(360px,calc(100vw - 28px));padding:10px 12px;border-radius:12px;background:var(--am-bg-solid);border:1px solid rgba(77,107,254,0.45);box-shadow:var(--am-shadow);backdrop-filter:blur(18px);font-size:12px;color:var(--am-text);pointer-events:auto;animation:am-toast-in .2s ease}',
+      '.am-update-banner .am-badge-dot{width:8px;height:8px;border-radius:50%;background:#4d6bfe;box-shadow:0 0 8px rgba(77,107,254,0.8);flex:none}',
+      '.am-update-banner b{font-weight:650}',
       '.am-resize::after{content:"";position:absolute;right:5px;bottom:5px;width:8px;height:8px;',
       'border-right:2px solid var(--am-border-strong);border-bottom:2px solid var(--am-border-strong)}',
       // ── 侧边栏入口 ──
@@ -154,6 +165,8 @@
       if (resizeHandler) { window.removeEventListener('resize', resizeHandler); resizeHandler = null }
       removeBar()
       removePanel()
+      if (typeof removeWelcome === 'function') removeWelcome()
+      if (typeof removeUpdateBanner === 'function') removeUpdateBanner()
       overlayHost = null
     }
 
@@ -168,6 +181,7 @@
         ensureBar()
         updateBar()
       }
+      if (typeof syncOverlayLayers === 'function') syncOverlayLayers()
     }
 
     function isDark() {
