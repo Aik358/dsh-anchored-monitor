@@ -63,7 +63,7 @@ until now.
   viewport-adaptive) — no size jumping. **zh/en language toggle** in the panel
   header and settings.
 - **Two skins** — the default **Serious** rheostat bar, or the **Meme** skin
-  ("滑动变祖器 / Liang-o-meter"): a small speech-bubble floats **above the
+  ("滑动变祖器 / Liang-o-meter"): a 52px speech-bubble floats **above the
   intensity knob** and slides with it, flipping through Liang Wenfeng faces —
   from *focused* (humble) to *slacking* (emperor) — as thinking intensity
   rises, pulsing with the band color. The face images are **embedded in the

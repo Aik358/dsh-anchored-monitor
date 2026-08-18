@@ -130,12 +130,14 @@
       '.am-bar.am-bar-meme{width:352px;max-width:calc(100vw - 28px)}',
       '.am-bar-meme .am-bar-track{position:relative;min-width:84px;max-width:120px}',
       '.am-bar-meme .am-bar-ticker{max-width:96px}',
-      '.am-bar-bubble{position:absolute;bottom:calc(100% + 5px);width:34px;height:34px;padding:2px;border-radius:10px;',
+      // 气泡是 .am-bar 的直接子元素(position:fixed 为其包含块): bottom:100% = 完全浮在条上方,
+      // translateX(-50%) 让 left 指向 knob 中心(0.2.5 曾漏写导致整体右偏 17px 错位)。
+      '.am-bar-bubble{position:absolute;bottom:100%;width:52px;height:52px;padding:4px;border-radius:14px;',
       'background:var(--am-bg-solid);border:1px solid var(--am-border-strong);box-shadow:var(--am-shadow);',
       'display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;',
-      'transition:left .5s cubic-bezier(.4,0,.2,1)}',
+      'transform:translateX(-50%);transition:left .5s cubic-bezier(.4,0,.2,1)}',
       '.am-bar-bubble::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);',
-      'border:5px solid transparent;border-top-color:var(--am-border-strong)}',
+      'border:7px solid transparent;border-top-color:var(--am-border-strong)}',
       '.am-bar-bubble img{width:100%;height:100%;border-radius:7px;object-fit:cover;display:block}',
       '.am-bar-bubble img.f-spec{animation:am-face-spec 1.6s ease-in-out infinite;box-shadow:0 0 10px rgba(22,163,74,0.7)}',
       '.am-bar-bubble img.f-mixed{animation:am-face-mixed .9s ease-in-out infinite;box-shadow:0 0 10px rgba(217,119,6,0.75)}',
@@ -215,10 +217,10 @@
     // ── 变阻器条 ──
     function barHtml() {
       if (state.skin === 'meme') {
-        return '<div class="am-bar-ico">' + ICON_RADAR + '</div>'
+        return '<div class="am-bar-bubble" data-am="bubble"><img class="am-bar-face" data-am="face" alt="' + esc(TEXTS.memeTitle) + '"></div>'
+          + '<div class="am-bar-ico">' + ICON_RADAR + '</div>'
           + '<i class="am-bar-dot am-band-unknown" data-am="dot"></i>'
           + '<div class="am-bar-track">'
-          + '<div class="am-bar-bubble" data-am="bubble"><img class="am-bar-face" data-am="face" alt="' + esc(TEXTS.memeTitle) + '"></div>'
           + '<div class="am-bar-fill" data-am="fill"></div>'
           + '<span class="am-bar-tick" style="left:' + (state.thresholds.specMax * 100).toFixed(0) + '%"></span>'
           + '<span class="am-bar-tick" style="left:' + (state.thresholds.reactMin * 100).toFixed(0) + '%"></span>'
@@ -274,14 +276,19 @@
         face.className = 'am-bar-face f-' + band
         face.title = TEXTS.memeTitle + ' · ' + (score == null ? '—' : score.toFixed(1)) + ' · ' + band
       }
-      // 表情气泡: 锚在强度圆圈(knob)上方, 随强度左右滑动(边界内钳制)
+      // 表情气泡: 锚在强度圆圈(knob)上方, 随强度左右滑动。
+      // 气泡是 .am-bar 的子元素: left 用「轨道偏移 + 强度比例×轨道宽」换算成条内坐标,
+      // 再 translateX(-50%) 中心对齐 knob(0.2.5 曾直接相对轨道定位且漏写居中, 造成右偏+压条)。
       var bubble = barEl.querySelector('[data-am=bubble]')
       if (bubble) {
         var trackEl = barEl.querySelector('.am-bar-track')
         var tw = trackEl ? trackEl.offsetWidth : 100
-        var px = pct / 100 * tw
-        px = Math.max(17, Math.min(tw - 17, px))
-        bubble.style.left = px + 'px'
+        var tLeft = trackEl ? trackEl.offsetLeft : 12
+        var barW = barEl.offsetWidth || 320
+        var knobX = tLeft + pct / 100 * tw
+        // 气泡 52px → 半宽 26px, 钳制保证气泡不超出条边界
+        knobX = Math.max(26, Math.min(barW - 26, knobX))
+        bubble.style.left = knobX + 'px'
       }
       scoreEl.textContent = score == null ? '—' : score.toFixed(1)
       if (!state.monitorOnline) {

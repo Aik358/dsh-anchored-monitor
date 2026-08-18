@@ -16,7 +16,7 @@ const entries = []
 for (const f of files) {
   const buf = await readFile(new URL(f, assetsDir))
   const idx = Number(f.match(/^liang-(\d+)\.png$/)[1])
-  entries.push(idx + ": '" + buf.toString('base64') + "'")
+  entries.push(idx + ": 'data:image/png;base64," + buf.toString('base64') + "'")
 }
 const assetsPart = '\n    // LIANG_DATA: 由 assemble 脚本自动生成(assets/liang/*.png → base64 data URI), 勿手改。\n'
   + '    var LIANG_DATA = {\n      ' + entries.join(',\n      ') + '\n    }\n'

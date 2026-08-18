@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] - 2026-08-18
+
+### Fixed
+
+- Face images really load now; the embedded base64 was missing the data URI prefix, so the faces never rendered. The assemble script now writes full data URIs (verified naturalWidth 96x96).
+- Bubble perfectly centered over the knob: added translateX(-50%) and anchored it to the bar instead of the track, so it no longer slides 17px right nor overlaps the bar top.
+
+### Changed
+
+- Bigger meme bubble frame (52px, face 44px) with a larger tail.
+- Test harness seeds welcomed=1 so mock screenshots are not covered by the welcome overlay.
+
 ## [0.2.5] - 2026-08-18
 
 ### Fixed
