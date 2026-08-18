@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-08-18
+
+### Added
+
+- **Meme skin「滑动变祖器 / Liang-o-meter」** — optional skin in the settings page (saved locally, applies instantly): the collapsed bar becomes a 28px square that flips through Liang Wenfeng faces — from *focused* (humble) to *slacking* (emperor) — as thinking intensity rises, pulsing with the band color; the host serves the PNGs from the loopback-only assets route (basename whitelist). Face assets from [Lichtspektrum/liang-intensity-calibrator](https://github.com/Lichtspektrum/liang-intensity-calibrator) (MIT, credited in the READMEs).
+
+### Changed
+
+- README: the zh/en language switch links moved to the top (right under the title), and the one-sentence hook is now **bilingual** directly below them (zh + en) — readable at a glance before scrolling.
+
 ## [0.2.3] - 2026-08-18
 
 ### Added

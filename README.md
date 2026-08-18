@@ -1,9 +1,13 @@
 # dsh-anchored-monitor
 
-> **In one sentence: it's a whip for DeepSeek V4 Pro.**
+**English** | [简体中文](README.zh-CN.md)
+
+> **In one sentence (一句话说清): it's a whip for DeepSeek V4 Pro.**
 > When the model falls from the focused, high-capability mode
 > ("We need…" / "I will…") into the scattered, low-focus mode ("let me…"),
 > the whip cracks — and pulls it back.
+> 这是给 DeepSeek V4 Pro 加的一根鞭子——当它从「We need / I will」的高专注、高能力模式，
+> 跌落到「let me」的发散、低专注、低效率模式时，就抽它一鞭，让它改回去。
 
 > Real-time chain-of-thought anchoring monitor & intervention for DeepSeek Harness.
 > Watch the we / let's / let me fingerprint of every reasoning block, stay in the
@@ -15,8 +19,6 @@
 [![node](https://img.shields.io/badge/node-%3E%3D22.19-blue)](#requirements)
 
 ![dashboard](docs/dashboard.png)
-
-**English** | [简体中文](README.zh-CN.md)
 
 ---
 
@@ -60,6 +62,13 @@ until now.
   grays matching the shell. The bar is a fixed-width rounded rectangle (320px,
   viewport-adaptive) — no size jumping. **zh/en language toggle** in the panel
   header and settings.
+- **Two skins** — the default **Serious** rheostat bar, or the **Meme** skin
+  ("滑动变祖器 / Liang-o-meter"): a small square flips through Liang Wenfeng
+  faces — from *focused* (humble) to *slacking* (emperor) — as thinking
+  intensity rises, pulsing with the band color. Switch in the settings page
+  (saved locally). Face assets from
+  [Lichtspektrum/liang-intensity-calibrator](https://github.com/Lichtspektrum/liang-intensity-calibrator)
+  (MIT).
 - **Zero-setup auto-start** — the host plugin spawns the monitor process when
   DSH starts (15s watchdog keeps it alive). No manual steps.
 - **Live streaming ECG** — the host subscribes to `llm/stream` and pushes
@@ -232,6 +241,7 @@ Built on the measured results of these community projects (shallow-cloned in
 - [ruler770525/dsh-anchored-flash](https://github.com/ruler770525/dsh-anchored-flash) — fingerprint counting (`we`/`let's`/`let me`) and the E1/E1.5 hint-wording experiments
 - [yjh051108/dsh-router-standard](https://github.com/yjh051108/dsh-router-standard) — dual-attractor paper and the three-band quantization (`bandOf`)
 - [KDB-Wind/dsh-minimal-anchored](https://github.com/KDB-Wind/dsh-minimal-anchored) — minimal-tool anchoring alternative
+- [Lichtspektrum/liang-intensity-calibrator](https://github.com/Lichtspektrum/liang-intensity-calibrator) — the meme face frames (MIT) powering the 「滑动变祖器」skin
 - [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) — the host framework this plugin extends
 
 ## License

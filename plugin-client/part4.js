@@ -49,7 +49,25 @@
       'body[data-ds-dark-theme] .am-set-toast{background:rgba(28,28,31,0.92)}',
       '.am-set-toast.ok{border-color:rgba(22,163,74,0.5)}',
       '.am-set-toast.err{border-color:rgba(220,38,38,0.5)}',
-      '@keyframes am-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}'
+      '@keyframes am-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',
+      // ── 皮肤选择 ──
+      '.am-set-skins{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
+      '.am-skin-card{padding:12px 14px;border-radius:12px;border:1px solid var(--am-border);background:var(--am-card);cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:border-color .15s ease,box-shadow .15s ease}',
+      '.am-skin-card:hover{border-color:var(--am-border-strong)}',
+      '.am-skin-card.active{border-color:var(--am-blue);box-shadow:0 0 0 3px rgba(77,107,254,0.14)}',
+      '.am-skin-card-head{display:flex;align-items:center;gap:8px}',
+      '.am-skin-check{width:16px;height:16px;border-radius:50%;border:1px solid var(--am-border-strong);flex:none;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}',
+      '.am-skin-card.active .am-skin-check{background:var(--am-blue);border-color:var(--am-blue)}',
+      '.am-skin-title{font-size:13px;font-weight:700;color:var(--am-text)}',
+      '.am-skin-desc{font-size:11.5px;color:var(--am-muted);line-height:1.55}',
+      '.am-skin-pv{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;background:var(--am-bg)}',
+      '.am-skin-pv .pv-track{position:relative;flex:1;height:6px;border-radius:99px;background:rgba(16,24,40,0.10)}',
+      'body[data-ds-dark-theme] .am-skin-pv .pv-track{background:rgba(148,148,155,0.16)}',
+      '.am-skin-pv .pv-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#4d6bfe,#22d3ee)}',
+      '.am-skin-pv .pv-score{font-size:11px;font-weight:700;color:var(--am-text);font-family:"JetBrains Mono",Consolas,monospace}',
+      '.am-skin-faces{display:flex;gap:3px;align-items:center}',
+      '.am-skin-faces img{width:24px;height:24px;border-radius:5px;object-fit:cover;border:1px solid var(--am-border)}',
+      '.am-skin-faces b{font-size:11.5px;color:var(--am-text);margin-left:4px;white-space:nowrap}'
     ].join('\n')
 
     var settingsStyleInjected = false
@@ -375,7 +393,24 @@
         return '<div class="am-set-group"><div class="am-set-group-head"><div class="am-set-group-title">' + esc(g.title) + '</div><div class="am-set-group-desc">' + esc(g.desc) + '</div></div>' + fieldsHtml + '</div>'
       }).join('')
 
-      el.innerHTML = status + groupsHtml
+      var skinHtml = '<div class="am-set-group"><div class="am-set-group-head"><div class="am-set-group-title">' + esc(TEXTS.skin) + '</div><div class="am-set-group-desc">' + esc(TEXTS.skinDesc) + '</div></div>'
+        + '<div class="am-set-skins">'
+        + '<div class="am-skin-card' + (state.skin === 'serious' ? ' active' : '') + '" data-skin="serious">'
+        + '<div class="am-skin-card-head"><span class="am-skin-check">' + (state.skin === 'serious' ? '✓' : '') + '</span><span class="am-skin-title">' + esc(TEXTS.skinSerious) + '</span></div>'
+        + '<div class="am-skin-desc">' + esc(TEXTS.skinSeriousDesc) + '</div>'
+        + '<div class="am-skin-pv"><span class="pv-track"><i class="pv-fill" style="width:34%"></i></span><span class="pv-score">34.2</span></div>'
+        + '</div>'
+        + '<div class="am-skin-card' + (state.skin === 'meme' ? ' active' : '') + '" data-skin="meme">'
+        + '<div class="am-skin-card-head"><span class="am-skin-check">' + (state.skin === 'meme' ? '✓' : '') + '</span><span class="am-skin-title">' + esc(TEXTS.skinMeme) + '</span></div>'
+        + '<div class="am-skin-desc">' + esc(TEXTS.skinMemeDesc) + '</div>'
+        + '<div class="am-skin-faces">'
+        + [0, 1, 2, 3, 4, 5].map(function (i) { return '<img src="' + ASSETS_BASE + 'liang-' + i + '.png" alt="">' }).join('')
+        + '<b>' + esc(TEXTS.memeTitle) + '</b>'
+        + '</div>'
+        + '</div>'
+        + '</div></div>'
+
+      el.innerHTML = status + skinHtml + groupsHtml
         + '<div class="am-set-savebar"><div class="am-set-savebar-note">' + esc(T('保存后自动重启监控进程使参数生效(会话内累计的窗口/基线会清零)。词典改动会改变指纹口径, 请按研究结论谨慎调整。', 'Saving restarts the monitor process (in-memory windows/baselines reset). Lexicon changes alter the fingerprint — tune carefully per the research.')) + '</div>'
         + '<button class="am-set-save" data-am="save">' + esc(T('保存设置', 'Save settings')) + '</button></div>'
 
@@ -392,6 +427,17 @@
           setTimeout(function () { drawSettings(el) }, 30)
         })
       }
+      el.querySelectorAll('[data-skin]').forEach(function (card) {
+        card.addEventListener('click', function () {
+          setSkin(card.getAttribute('data-skin'))
+          el.querySelectorAll('[data-skin]').forEach(function (c) {
+            c.classList.toggle('active', c === card)
+          })
+          el.querySelectorAll('[data-skin] .am-skin-check').forEach(function (chk, i) {
+            chk.textContent = el.querySelectorAll('[data-skin]')[i] === card ? '✓' : ''
+          })
+        })
+      })
     }
 
     function readValues() {

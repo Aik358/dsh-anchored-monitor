@@ -58,7 +58,14 @@ window.__ModuleLoader__.load({
         welcomeStep1: T('① 左侧栏底部点「锚定监控」打开实时面板', '① Open the live panel from the left sidebar footer'),
         welcomeStep2: T('② 收起时是变阻器条：滑条=思考强度，右侧=实时日志', '② Collapsed: rheostat bar — slider = thinking intensity, right = live log'),
         welcomeStep3: T('③ 面板右上可一键关闭干预(只监控)；设置页可调全部参数', '③ Toggle interventions off in the panel; tune every parameter in settings'),
-        welcomeBtn: T('开始使用', 'Get started')
+        welcomeBtn: T('开始使用', 'Get started'),
+        skin: T('皮肤', 'Skin'),
+        skinDesc: T('仅保存在本机浏览器, 即时生效。表情素材来自 Lichtspektrum/liang-intensity-calibrator (MIT)。', 'Saved locally in your browser, applies instantly. Face assets from Lichtspektrum/liang-intensity-calibrator (MIT).'),
+        skinSerious: T('严肃皮肤', 'Serious skin'),
+        skinSeriousDesc: T('默认皮肤: 理性的变阻器条, 不整活。', 'Default: the sober rheostat bar.'),
+        skinMeme: T('梗皮肤', 'Meme skin'),
+        skinMemeDesc: T('变阻器条变身「滑动变祖器」: 小方块按思考强度从夯到拉切换梁文锋表情并脉冲发光。', 'The bar becomes the "Liang-o-meter": a small square flips Liang Wenfeng faces from focused to slacking as intensity rises, with a pulsing glow.'),
+        memeTitle: T('滑动变祖器', 'Liang-o-meter')
       }
     }
     var TEXTS = buildTexts()
@@ -71,6 +78,21 @@ window.__ModuleLoader__.load({
       emit()
     }
     function toggleLang() { setLang(!langZh) }
+    var ASSETS_BASE = '/api/anchored-monitor/assets/liang/'
+    function setSkin(skin) {
+      state.skin = skin === 'meme' ? 'meme' : 'serious'
+      try { localStorage.setItem(SKIN_KEY, state.skin) } catch (e) {}
+      if (barEl) { removeBar(); ensureBar(); updateBar() }
+      emit()
+    }
+    function liangIdx(score) {
+      if (score == null) return 0
+      var pct = Math.max(0, Math.min(100, Number(score)))
+      return Math.round(pct / 100 * 5)
+    }
+    function liangUrl(score) {
+      return ASSETS_BASE + 'liang-' + liangIdx(score) + '.png'
+    }
     var BAND_NAMES = { spec: 'spec', mixed: 'mixed', react: 'react', unknown: 'unknown' }
     var PHASE_NAMES = { healthy: 'healthy', warning: 'warning', critical: 'critical', restart: 'restart' }
     var BAND_COLORS = { spec: '#16a34a', mixed: '#d97706', react: '#dc2626', unknown: '#9ca3af' }
@@ -109,6 +131,8 @@ window.__ModuleLoader__.load({
     var WELCOME_KEY = 'dsh-anchored-monitor.welcomed'
     var UPDATE_DISMISS_KEY = 'dsh-anchored-monitor.update.dismissed'
     try { state.welcome = localStorage.getItem(WELCOME_KEY) !== '1' } catch (e) { state.welcome = true }
+    var SKIN_KEY = 'dsh-anchored-monitor.skin'
+    try { state.skin = localStorage.getItem(SKIN_KEY) === 'meme' ? 'meme' : 'serious' } catch (e) { state.skin = 'serious' }
 
     function loadJson(key, fb) { try { var raw = localStorage.getItem(key); if (raw) { var v = JSON.parse(raw); if (v && typeof v === 'object') return v } } catch (e) {} return fb }
     function saveJson(key, value) { try { localStorage.setItem(key, JSON.stringify(value)) } catch (e) {} }

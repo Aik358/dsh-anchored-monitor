@@ -1,7 +1,7 @@
 {
   "name": "@a9i5k4/dsh-anchored-monitor",
-  "version": "0.2.3",
-  "description": "DSH 实时思维链锚定监控插件: we/let's/let me 指纹波段检测(spec/mixed/react) + L1温和引导/L2强制重置/L3会话重启分级干预; 左侧栏入口 + 液体毛玻璃浮层 + 变阻器式思考强度条; 独立监控进程 + JSONL 实验日志 + 离线回放/参数校准。",
+  "version": "0.2.4",
+  "description": "DSH 实时思维链锚定监控插件: we/let's/let me 指纹波段检测(spec/mixed/react) + L1温和引导/L2强制重置/L3会话重启分级干预; 左侧栏入口 + 液体毛玻璃浮层 + 变阻器式思考强度条; 独立监控进程 + JSONL 实验日志 + 离线回放/参数校准; 变阻器条可选严肃/「滑动变祖器」梗双皮肤。",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -22,6 +22,7 @@
     "config",
     "preset",
     "web",
+    "assets",
     "cordis.patch.yml",
     "README.md",
     "README.zh-CN.md",

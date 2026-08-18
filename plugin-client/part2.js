@@ -125,7 +125,20 @@
       '.am-side-entry{display:flex;align-items:center;gap:7px;width:100%;cursor:pointer;user-select:none}',
       '.am-side-ico{display:flex;flex:none;opacity:.9}',
       '.am-side-label{flex:1;text-align:left;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.am-dot{width:7px;height:7px;border-radius:50%;flex:none}'
+      '.am-dot{width:7px;height:7px;border-radius:50%;flex:none}',
+      // ── 梗皮肤(meme「滑动变祖器」) ──
+      '.am-bar.am-bar-meme{width:352px;max-width:calc(100vw - 28px)}',
+      '.am-bar-face{width:28px;height:28px;border-radius:8px;flex:none;object-fit:cover;border:1px solid var(--am-border-strong);background:var(--am-card)}',
+      '.am-bar-face.f-spec{animation:am-face-spec 1.6s ease-in-out infinite;box-shadow:0 0 10px rgba(22,163,74,0.7)}',
+      '.am-bar-face.f-mixed{animation:am-face-mixed .9s ease-in-out infinite;box-shadow:0 0 10px rgba(217,119,6,0.75)}',
+      '.am-bar-face.f-react{animation:am-face-react .5s ease-in-out infinite;box-shadow:0 0 13px rgba(220,38,38,0.9)}',
+      '.am-bar-face.f-unknown{opacity:.5;filter:grayscale(.65)}',
+      '@keyframes am-face-spec{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}',
+      '@keyframes am-face-mixed{0%,100%{transform:scale(1)}50%{transform:scale(1.1) rotate(-2deg)}}',
+      '@keyframes am-face-react{0%,100%{transform:scale(1)}25%{transform:scale(1.14) rotate(-3deg)}75%{transform:scale(1.08) rotate(2deg)}}',
+      '.am-meme-chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;flex:none;white-space:nowrap;color:var(--am-text);border:1px solid var(--am-border-strong);background:var(--am-card)}',
+      '.am-bar-meme .am-bar-track{min-width:76px;max-width:112px}',
+      '.am-bar-meme .am-bar-ticker{max-width:96px}'
     ].join('\n')
 
     var styleInjected = false
@@ -190,6 +203,18 @@
 
     // ── 变阻器条 ──
     function barHtml() {
+      if (state.skin === 'meme') {
+        return '<img class="am-bar-face" data-am="face" alt="' + esc(TEXTS.memeTitle) + '">'
+          + '<span class="am-meme-chip" data-am="title">' + esc(TEXTS.memeTitle) + '</span>'
+          + '<div class="am-bar-track">'
+          + '<div class="am-bar-fill" data-am="fill"></div>'
+          + '<span class="am-bar-tick" style="left:' + (state.thresholds.specMax * 100).toFixed(0) + '%"></span>'
+          + '<span class="am-bar-tick" style="left:' + (state.thresholds.reactMin * 100).toFixed(0) + '%"></span>'
+          + '<i class="am-bar-knob" data-am="knob"></i>'
+          + '</div>'
+          + '<span class="am-bar-score am-mono" data-am="score">—</span>'
+          + '<span class="am-bar-ticker" data-am="ticker"></span>'
+      }
       return '<div class="am-bar-ico">' + ICON_RADAR + '</div>'
         + '<i class="am-bar-dot am-band-unknown" data-am="dot"></i>'
         + '<div class="am-bar-track">'
@@ -205,7 +230,7 @@
     function ensureBar() {
       if (barEl) return
       barEl = document.createElement('div')
-      barEl.className = 'am-bar'
+      barEl.className = 'am-bar' + (state.skin === 'meme' ? ' am-bar-meme' : '')
       barEl.innerHTML = barHtml()
       overlayHost.appendChild(barEl)
       bindBarDrag()
@@ -225,23 +250,27 @@
       var dot = barEl.querySelector('[data-am=dot]')
       var scoreEl = barEl.querySelector('[data-am=score]')
       var phaseEl = barEl.querySelector('[data-am=phase]')
+      var face = barEl.querySelector('[data-am=face]')
+      barEl.className = 'am-bar' + (state.skin === 'meme' ? ' am-bar-meme' : '')
       fill.style.width = pct + '%'
       fill.className = 'am-bar-fill am-fill-' + band
       knob.style.left = pct + '%'
-      dot.className = 'am-bar-dot am-band-' + band
+      if (dot) dot.className = 'am-bar-dot am-band-' + band
+      if (face) {
+        face.src = liangUrl(score)
+        face.className = 'am-bar-face f-' + band
+        face.title = TEXTS.memeTitle + ' · ' + (score == null ? '—' : score.toFixed(1)) + ' · ' + band
+      }
       scoreEl.textContent = score == null ? '—' : score.toFixed(1)
       if (!state.monitorOnline) {
         scoreEl.textContent = '—'
-        phaseEl.textContent = 'offline'
-        phaseEl.className = 'am-bar-phase am-phase-offline'
+        if (phaseEl) { phaseEl.textContent = 'offline'; phaseEl.className = 'am-bar-phase am-phase-offline' }
         barEl.title = state.lastError || TEXTS.startHint
       } else if (state.interventionsEnabled === false) {
-        phaseEl.textContent = TEXTS.monitorOnly
-        phaseEl.className = 'am-bar-phase am-phase-offline'
+        if (phaseEl) { phaseEl.textContent = TEXTS.monitorOnly; phaseEl.className = 'am-bar-phase am-phase-offline' }
         barEl.title = TEXTS.title + ' · ' + TEXTS.monitorOnly
       } else {
-        phaseEl.textContent = PHASE_NAMES[currentPhase()]
-        phaseEl.className = 'am-bar-phase am-phase-' + currentPhase()
+        if (phaseEl) { phaseEl.textContent = PHASE_NAMES[currentPhase()]; phaseEl.className = 'am-bar-phase am-phase-' + currentPhase() }
         barEl.title = TEXTS.title + ' · ' + TEXTS.monitorOnline
       }
       updateTickerOnly()

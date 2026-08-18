@@ -1,8 +1,12 @@
 # dsh-anchored-monitor
 
-> **一句话说清：这是给 DeepSeek V4 Pro 加的一根鞭子。**
+[English](README.md) | **简体中文**
+
+> **一句话说清（In one sentence）：这是给 DeepSeek V4 Pro 加的一根鞭子。**
 > 当它从「We need / I will」这类高专注、高能力模式，跌落到「let me」这类
 > 发散、低专注、低效率模式时，就抽它一鞭，让它改回去。
+> When the model falls from the focused, high-capability mode ("We need…" / "I will…")
+> into the scattered, low-focus mode ("let me…"), the whip cracks — and pulls it back.
 
 > DeepSeek Harness 实时思维链锚定监控与干预插件。
 > 持续监测每个 reasoning 块的 we / let's / let me 指纹, 让会话稳定在 spec 波段,
@@ -14,8 +18,6 @@
 [![node](https://img.shields.io/badge/node-%3E%3D22.19-blue)](#环境要求)
 
 ![dashboard](docs/dashboard.png)
-
-[English](README.md) | **简体中文**
 
 ---
 
@@ -50,6 +52,9 @@ DeepSeek V4 Pro 强烈依赖**首轮请求**展示给它的内容来选择执行
   收起态变成**变阻器式悬浮条**: 思考强度即滑条位置, 附带日志滚动, 固定宽度圆角矩形(320px,
   视口自适应)不再忽大忽小。DeepSeek 白/灰/蓝主色调, 深色模式用与背景一致的中性灰;
   面板标题栏与设置页带**中/英切换**。
+- **双皮肤** — 默认「严肃」变阻器条; 或「梗」皮肤(**滑动变祖器**): 小方块按思考强度
+  从夯到拉切换梁文锋表情(卑微→帝服), 随波段脉冲发光。设置页一键切换(本地保存)。
+  表情素材来自 [Lichtspektrum/liang-intensity-calibrator](https://github.com/Lichtspektrum/liang-intensity-calibrator)(MIT)。
 - **零操作自动启动** — host 插件在 DSH 启动时自动拉起监控进程(15 秒看门狗保活), 用户无需任何操作。
 - **实时流式心电图** — host 订阅 `llm/stream` 的 `reasoning-delta`, 按 1 秒节流实时推送:
   模型一边想, 图表与悬浮条一边跳(计数线性可加, 窗口聚合精确等价), 不再等整轮结束。
@@ -171,6 +176,7 @@ reasoning 文本可能含敏感信息, 实验日志默认本地落盘, 可在 `e
 - [ruler770525/dsh-anchored-flash](https://github.com/ruler770525/dsh-anchored-flash) — 指纹计数(`we`/`let's`/`let me`)与 E1/E1.5 措辞实验
 - [yjh051108/dsh-router-standard](https://github.com/yjh051108/dsh-router-standard) — 双吸引子论文与三波段量化(`bandOf`)
 - [KDB-Wind/dsh-minimal-anchored](https://github.com/KDB-Wind/dsh-minimal-anchored) — Minimal 工具锚定替代方案
+- [Lichtspektrum/liang-intensity-calibrator](https://github.com/Lichtspektrum/liang-intensity-calibrator) — 「滑动变祖器」皮肤的梁文锋表情帧素材(MIT)
 - [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) — 本插件扩展的宿主框架
 
 ## 插件作者注意(扩展前必读)
