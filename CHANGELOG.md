@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2026-08-18
+
+### Added
+
+- **One-click Reset to defaults** in the settings page — clears every monitor override (window / lexicon / scoring / thresholds / cooldowns / log) and restarts the monitor with the profile's factory parameters, so you can never get stuck with settings you broke.
+- **New positioning** in the READMEs: "don't touch a thing and it's a live gauge of how hard your model is thinking" — a visualization-first tool (thinking-efficiency / capability-intensity gauge) that only needs the whip when you want interventions, with the 「滑动变祖器」meme skin as the live *"梁系强度"* meter.
+
 ## [0.2.6] - 2026-08-18
 
 ### Fixed

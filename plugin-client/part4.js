@@ -43,6 +43,9 @@
       'box-shadow:0 6px 16px rgba(77,107,254,0.35);transition:transform .12s ease,box-shadow .12s ease}',
       '.am-set-save:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(77,107,254,0.4)}',
       '.am-set-save:disabled{opacity:.55;cursor:default;transform:none}',
+      '.am-set-reset{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:1px solid var(--am-border-strong);',
+      'cursor:pointer;background:transparent;color:var(--am-muted);font-size:13px;transition:all .15s ease}',
+      '.am-set-reset:hover{border-color:rgba(220,38,38,0.55);color:#dc2626;background:rgba(220,38,38,0.06)}',
       '.am-set-toast{position:fixed;right:22px;bottom:22px;z-index:2147483100;padding:11px 16px;border-radius:12px;font-size:12.5px;',
       'border:1px solid var(--am-border-strong);background:rgba(255,255,255,0.92);color:var(--am-text);',
       'box-shadow:0 14px 40px rgba(16,24,40,0.2);backdrop-filter:blur(14px);animation:am-toast-in .18s ease}',
@@ -412,12 +415,36 @@
 
       el.innerHTML = status + skinHtml + groupsHtml
         + '<div class="am-set-savebar"><div class="am-set-savebar-note">' + esc(T('保存后自动重启监控进程使参数生效(会话内累计的窗口/基线会清零)。词典改动会改变指纹口径, 请按研究结论谨慎调整。', 'Saving restarts the monitor process (in-memory windows/baselines reset). Lexicon changes alter the fingerprint — tune carefully per the research.')) + '</div>'
+        + '<button class="am-set-reset" data-am="reset" title="' + esc(TEXTS.resetBtnTitle) + '">' + esc(TEXTS.resetBtn) + '</button>'
         + '<button class="am-set-save" data-am="save">' + esc(T('保存设置', 'Save settings')) + '</button></div>'
 
       var saveBtn = el.querySelector('[data-am=save]')
       if (saveBtn) {
         saveBtn.addEventListener('click', function () {
           void saveSettings(el)
+        })
+      }
+      var resetBtn = el.querySelector('[data-am=reset]')
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          if (!window.confirm(TEXTS.resetConfirm)) return
+          resetBtn.disabled = true
+          fetch('/api/anchored-monitor/settings', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ reset: true })
+          }).then(function (res) { return res.json() }).then(function (j) {
+            if (j && j.ok) {
+              toast(TEXTS.resetDone, true)
+              setTimeout(function () { drawSettings(el) }, 400)
+            } else {
+              toast(TEXTS.resetFail + String((j && j.error) || 'unknown'), false)
+              resetBtn.disabled = false
+            }
+          }).catch(function (err) {
+            toast(TEXTS.resetFail + String(err && err.message ? err.message : err), false)
+            resetBtn.disabled = false
+          })
         })
       }
       var langBtn = el.querySelector('[data-am=langbtn]')

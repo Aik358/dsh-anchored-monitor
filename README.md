@@ -22,6 +22,24 @@
 
 ---
 
+## What it is, in one line
+
+**Don't touch a thing and it's simply a live gauge of how hard your model is
+thinking right now.** Thinking intensity, three-band state and the ECG-style
+curve, tucked into the corner of your screen — a real-time visualization of
+your model's thinking efficiency / capability intensity.
+
+- **Visualization first (default — no intervention until you want it)**: a
+  real-time thinking-efficiency / capability-intensity gauge.
+- **Intervention when you need the whip**: only cracks when the trajectory
+  drifts into the scattered "let me" band — and it auto-continues the task.
+- **「滑动变祖器」meme skin**: flip the gauge into a Liang-o-meter that
+  live-queries DeepSeek V4 Pro's *"梁系强度"* (from focused-humble to
+  emperor-slacking) while it runs.
+
+> Open the settings page and you can tune every parameter — and one-click
+> **Reset to defaults** if you ever change too much.
+
 ## Why this exists
 
 DeepSeek V4 Pro conditions heavily on what the **first request** shows it. The

@@ -67,7 +67,12 @@ window.__ModuleLoader__.load({
         skinSeriousDesc: T('默认皮肤: 理性的变阻器条, 不整活。', 'Default: the sober rheostat bar.'),
         skinMeme: T('梗皮肤', 'Meme skin'),
         skinMemeDesc: T('变阻器条变身「滑动变祖器」: 表情小气泡浮在强度圆圈上方, 随强度从夯到拉切换梁文锋表情并脉冲发光。', 'The bar becomes the "Liang-o-meter": a face bubble floats above the intensity knob, flipping Liang Wenfeng faces from focused to slacking as intensity rises, with a pulsing glow.'),
-        memeTitle: T('滑动变祖器', 'Liang-o-meter')
+        memeTitle: T('滑动变祖器', 'Liang-o-meter'),
+        resetBtn: T('恢复默认', 'Reset to defaults'),
+        resetConfirm: T('确定把全部监控参数恢复为默认值? 自定义的窗口/词典/评分/阈值/冷却等设置会被清除。', 'Reset all monitor parameters to defaults? Custom window / lexicon / scoring / threshold / cooldown settings will be cleared.'),
+        resetDone: T('已恢复默认参数', 'Reset to defaults'),
+        resetFail: T('恢复失败: ', 'Reset failed: '),
+        resetBtnTitle: T('一键还原出厂默认参数(防止改乱)', 'One-click restore of default parameters')
       }
     }
     var TEXTS = buildTexts()
