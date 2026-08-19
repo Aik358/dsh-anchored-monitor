@@ -111,7 +111,7 @@ body {
 
 /* ---------- session sidebar ---------- */
 .sessions { display: flex; flex-direction: column; min-height: 300px; }
-.session-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
+.session-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; max-height: min(58vh, 420px); min-height: 0; padding-right: 3px; }
 .session-item {
   display: flex; flex-direction: column; gap: 6px;
   padding: 10px 12px; border-radius: var(--radius-sm);

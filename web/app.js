@@ -12,6 +12,7 @@ const state = {
   sseOk: false,
   chartHover: null
 }
+let chartView = { start: 0, end: 0, win: 120, follow: true, _session: null }
 
 const BAND_COLORS = { spec: '#34d399', mixed: '#fbbf24', react: '#f87171', unknown: '#94a3b8' }
 const TREND_ICONS = { rising: '▲', falling: '▼', stable: '─' }
@@ -35,7 +36,7 @@ async function api(path, opts) {
 /* ================= sessions ================= */
 
 async function loadSessions() {
-  const list = await api('/api/sessions')
+  const list = (await api('/api/sessions')).slice().sort((a, b) => (b.lastActivityAt || 0) - (a.lastActivityAt || 0))
   state.sessions = list
   if (list.length > 0 && (!state.selectedId || !list.some((s) => s.sessionId === state.selectedId))) {
     state.selectedId = list[0].sessionId
@@ -166,7 +167,7 @@ function drawMainChart(snap, cfg) {
   ctx.fillStyle = 'rgba(10, 14, 26, 0.35)'
   ctx.fillRect(0, 0, W, H)
 
-  const pad = { l: 48, r: 18, t: 12, b: 24 }
+  const pad = { l: 48, r: 18, t: 12, b: 52 }
   const plotW = W - pad.l - pad.r
   const plotH = H - pad.t - pad.b
   const hist = snap.history
@@ -178,8 +179,26 @@ function drawMainChart(snap, cfg) {
     return
   }
   const n = hist.length
+  if (snap.sessionId && snap.sessionId !== chartView._session) {
+    chartView._session = snap.sessionId
+    chartView.start = 0
+    chartView.end = 0
+    chartView.follow = true
+  }
+  const win = Math.max(10, chartView.win || 120)
+  if (chartView.follow || n <= win) {
+    chartView.end = n
+    chartView.start = Math.max(0, n - win)
+  } else {
+    if (chartView.end > n) { chartView.end = n; chartView.start = Math.max(0, n - win) }
+    if (chartView.end - chartView.start < 2) chartView.start = Math.max(0, Math.min(n - 2, chartView.start))
+  }
+  const vs = chartView.start
+  const ve = chartView.end
+  const m = Math.max(1, ve - vs)
+  const seg = hist.slice(vs, ve)
   const yOf = (v) => pad.t + plotH * (1 - Math.min(100, Math.max(0, v)) / 100)
-  const xOf = (i) => pad.l + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW)
+  const xOf = (i) => pad.l + (m === 1 ? plotW / 2 : (i / (m - 1)) * plotW)
 
   // grid
   ctx.font = '10px "JetBrains Mono", monospace'
@@ -196,9 +215,9 @@ function drawMainChart(snap, cfg) {
   }
 
   // band strips (point-colored vertical strip)
-  const stripW = Math.max(1, plotW / n)
-  for (let i = 0; i < n; i++) {
-    ctx.fillStyle = hexWithAlpha(BAND_COLORS[hist[i].band] || BAND_COLORS.unknown, 0.09)
+  const stripW = Math.max(1, plotW / m)
+  for (let i = 0; i < m; i++) {
+    ctx.fillStyle = hexWithAlpha(BAND_COLORS[seg[i].band] || BAND_COLORS.unknown, 0.09)
     ctx.fillRect(xOf(i) - stripW / 2, pad.t, stripW, plotH)
   }
 
@@ -221,9 +240,9 @@ function drawMainChart(snap, cfg) {
   ctx.lineWidth = 1.8
   ctx.lineJoin = 'round'
   ctx.beginPath()
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < m; i++) {
     const x = xOf(i)
-    const y = yOf(hist[i].normalizedScore)
+    const y = yOf(seg[i].normalizedScore)
     if (i === 0) ctx.moveTo(x, y)
     else ctx.lineTo(x, y)
   }
@@ -231,7 +250,7 @@ function drawMainChart(snap, cfg) {
 
   // intervention markers
   const seqToX = new Map()
-  hist.forEach((p, i) => seqToX.set(p.sequence, xOf(i)))
+  seg.forEach((p, i) => seqToX.set(p.sequence, xOf(i)))
   for (const iv of snap.interventions) {
     let x = seqToX.get(iv.sequence)
     if (x === undefined) continue
@@ -253,8 +272,8 @@ function drawMainChart(snap, cfg) {
   // hover crosshair + tooltip
   const hover = state.chartHover
   if (hover && hover.snapshotSeq >= 0) {
-    const idx = clamp(hover.index, 0, n - 1)
-    const p = hist[idx]
+    const idx = clamp(hover.index, 0, m - 1)
+    const p = seg[idx]
     const x = xOf(idx)
     ctx.strokeStyle = 'rgba(232,236,248,0.35)'
     ctx.setLineDash([3, 3])
@@ -273,8 +292,53 @@ function drawMainChart(snap, cfg) {
   }
 
   $('chart-range').textContent =
-    'seq ' + hist[0].sequence + ' → ' + hist[n - 1].sequence + ' · ' + n + ' 块 · 置信度 ' +
+    'seq ' + seg[0].sequence + ' → ' + seg[m - 1].sequence + ' · 窗口 ' + m + '/' + n + ' 块' +
+    (chartView.follow ? ' · ⏺ 自动跟随最新' : ' · ⏸ 手动') + ' · 置信度 ' +
     (hist[n - 1].confidence ? (hist[n - 1].confidence * 100).toFixed(0) + '%' : '—')
+  drawMiniMap(ctx, W, H, pad, plotW, plotH, hist, vs, ve, n)
+}
+
+function drawMiniMap(ctx, W, H, pad, plotW, plotH, hist, vs, ve, n) {
+  if (n < 2) return
+  const mw = plotW
+  const mh = 26
+  const mx = pad.l
+  const my = pad.t + plotH + 10
+  ctx.fillStyle = 'rgba(10,14,26,0.6)'
+  ctx.fillRect(mx - 6, my - 4, mw + 12, mh + 16)
+  ctx.strokeStyle = 'rgba(148,163,215,0.22)'
+  ctx.lineWidth = 1
+  ctx.strokeRect(mx - 6, my - 4, mw + 12, mh + 16)
+  const gx = (idx) => mx + (n === 1 ? mw / 2 : (idx / (n - 1)) * mw)
+  const gy = (v) => my + mh * (1 - Math.min(100, Math.max(0, v)) / 100)
+  ctx.strokeStyle = 'rgba(139,124,255,0.65)'
+  ctx.lineWidth = 1.3
+  ctx.beginPath()
+  const step = Math.max(1, Math.ceil(n / 300))
+  let moved = false
+  for (let i = 0; i < n; i += step) {
+    const x = gx(i)
+    const y = gy(hist[i].normalizedScore)
+    if (!moved) { ctx.moveTo(x, y); moved = true } else ctx.lineTo(x, y)
+  }
+  if (!moved && n > 0) ctx.moveTo(gx(0), gy(hist[0].normalizedScore))
+  ctx.stroke()
+  const li = n - 1
+  ctx.fillStyle = '#22d3ee'
+  ctx.beginPath()
+  ctx.arc(gx(li), gy(hist[li].normalizedScore), 3, 0, Math.PI * 2)
+  ctx.fill()
+  const fx0 = mx + (Math.max(0, vs) / n) * mw
+  let fx1 = mx + (Math.min(n, ve) / n) * mw
+  if (fx1 - fx0 < 8) fx1 = fx0 + 8
+  ctx.fillStyle = 'rgba(139,124,255,0.16)'
+  ctx.fillRect(fx0, my - 2, fx1 - fx0, mh + 2)
+  ctx.strokeStyle = 'rgba(139,124,255,0.8)'
+  ctx.strokeRect(fx0, my - 2, fx1 - fx0, mh + 2)
+  ctx.fillStyle = '#5b6585'
+  ctx.font = '9px "JetBrains Mono", monospace'
+  ctx.textAlign = 'left'
+  ctx.fillText(chartView.follow ? '⏺ 自动跟随最新 · 拖动迷你条漫游 / 滚轮缩放 / 双击恢复' : '⏸ 手动漫游 · 双击恢复跟随最新', mx - 4, my + mh + 13)
 }
 
 function drawThreshold(ctx, value, pad, plotW, plotH, yOf, color, label) {
@@ -334,9 +398,10 @@ function bindChartHover() {
     const pad = { l: 48, r: 18 }
     const plotW = W - pad.l - pad.r
     const n = snap.history.length
+    const m = Math.max(1, chartView.end - chartView.start)
     const rel = (ev.clientX - rect.left - pad.l) / plotW
-    const idx = Math.round(clamp(rel, 0, 1) * (n - 1))
-    state.chartHover = { index: idx, snapshotSeq: snap.history[idx].sequence }
+    const idx = Math.round(clamp(rel, 0, 1) * (m - 1))
+    state.chartHover = { index: idx, snapshotSeq: snap.history[chartView.start + idx].sequence }
     drawMainChart(snap, state.config)
   })
   canvas.addEventListener('mouseleave', () => {
@@ -490,8 +555,66 @@ function renderConfigInfo(cfg) {
   $('band-react-min').textContent = cfg.bands ? cfg.bands.react_min : '0.5'
 }
 
+function bindChartView() {
+  const canvas = $('main-chart')
+  const PAD = { l: 48, r: 18, t: 12, b: 52 }
+  let drag = null
+  canvas.addEventListener('pointerdown', (ev) => {
+    const rect = canvas.getBoundingClientRect()
+    const insideMini = (ev.clientY - rect.top) > rect.height - 48
+    if (!insideMini) return
+    const plotW = Math.max(1, rect.width - PAD.l - PAD.r)
+    const n = state.snapshot && state.snapshot.history ? state.snapshot.history.length : 0
+    if (n <= 1) return
+    const ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left - PAD.l) / plotW))
+    const w = Math.max(10, (chartView.end - chartView.start) || chartView.win || 120)
+    chartView.follow = false
+    chartView.start = Math.max(0, Math.min(n - w, Math.round(ratio * n - w / 2)))
+    chartView.end = Math.min(n, chartView.start + w)
+    drag = { n, w }
+    try { canvas.setPointerCapture(ev.pointerId) } catch (e) {}
+    if (state.snapshot) drawMainChart(state.snapshot, state.config)
+  })
+  canvas.addEventListener('pointermove', (ev) => {
+    if (!drag) return
+    const rect = canvas.getBoundingClientRect()
+    const plotW = Math.max(1, rect.width - PAD.l - PAD.r)
+    const ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left - PAD.l) / plotW))
+    chartView.follow = false
+    chartView.start = Math.max(0, Math.min(drag.n - drag.w, Math.round(ratio * drag.n - drag.w / 2)))
+    chartView.end = Math.min(drag.n, chartView.start + drag.w)
+    if (state.snapshot) drawMainChart(state.snapshot, state.config)
+  })
+  const endDrag = () => { drag = null }
+  canvas.addEventListener('pointerup', endDrag)
+  canvas.addEventListener('pointercancel', endDrag)
+  canvas.addEventListener('wheel', (ev) => {
+    ev.preventDefault()
+    const n = state.snapshot && state.snapshot.history ? state.snapshot.history.length : 0
+    if (n < 4) return
+    const cur = (chartView.end - chartView.start) || chartView.win || 120
+    let newWin = Math.round(cur * (ev.deltaY > 0 ? 1.25 : 0.8))
+    newWin = Math.max(10, Math.min(n, newWin))
+    if (!chartView.follow) {
+      const center = (chartView.start + chartView.end) / 2
+      chartView.start = Math.max(0, Math.min(n - newWin, Math.round(center - newWin / 2)))
+    } else {
+      chartView.end = n
+      chartView.start = Math.max(0, n - newWin)
+    }
+    chartView.win = newWin
+    if (!chartView.follow) chartView.end = Math.min(n, chartView.start + newWin)
+    if (state.snapshot) drawMainChart(state.snapshot, state.config)
+  }, { passive: false })
+  canvas.addEventListener('dblclick', () => {
+    chartView.follow = true
+    if (state.snapshot) drawMainChart(state.snapshot, state.config)
+  })
+}
+
 function setupChrome() {
   bindChartHover()
+  bindChartView()
   $('refresh-sessions').addEventListener('click', loadSessions)
   $('clear-feed').addEventListener('click', () => { state.feed = []; renderFeed() })
   setInterval(() => { $('clock').textContent = fmtTime(Date.now()) }, 1000)

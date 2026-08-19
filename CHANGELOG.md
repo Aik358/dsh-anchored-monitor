@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-19
+
+### Added
+
+- **Follow the active conversation** — the in-GUI panel now subscribes to the DSH shell's sessions service and automatically switches to the conversation that is currently open in the drawer/sidebar. No more staring at one fixed conversation: switch conversations in the GUI and the band chart / rheostat bar / interventions follow.
+- **Followed-conversation ring** — the panel's switch button shows the monitored conversation id, ringed in blue when it follows the one you have open (amber = manual watch, red = the active conversation is not tracked yet); the floating bar's tooltip also carries the session id, so the panel stays findable no matter which conversation drawer you are in.
+- **Not-tracked hint** — when the active conversation has produced no reasoning yet (so the monitor has no data for it), the panel says so instead of silently showing a stale session; it auto-follows the moment the first thinking block arrives.
+- **Standalone dashboard follows recency** — web/app.js now defaults to the most recently active session (sorted by lastActivityAt) instead of the first registered one.
+- **Zoomable chart with auto-follow-latest** — both the in-GUI panel and the standalone dashboard draw a bounded window of history instead of forever compressing the whole session into the same width; a **mini-map strip at the bottom of the chart** lets you drag to pan and wheel to zoom, and **double-click resumes auto-follow** so the view slides to the newest point as data arrives.
+- **Header declutter** — the switch button + a status ring replace the separate status pill; the action buttons (✕ / ➖ / ↗) stay in place instead of being pushed off the default spot.
 ## [0.2.9] - 2026-08-18
 
 ### Added

@@ -147,6 +147,54 @@ window.__ModuleLoader__.load({
     var SKIN_KEY = 'dsh-anchored-monitor.skin'
     try { state.skin = localStorage.getItem(SKIN_KEY) === 'meme' ? 'meme' : 'serious' } catch (e) { state.skin = 'serious' }
 
+    // 0.3.0: 跟随当前活跃对话。优先用壳的 sessions.list.getSnapshot().current(DSH 面板正在打开的会话);
+    // 服务不可用或 id 命名空间对不上时, 兜底跟随「最近 30s 仍产生思维链/正文推送的会话」(你正在对话的那个自然最活跃)。
+    // 手动在下拉中点选后 8s 内不自动覆盖, 尊重临时查看。
+    var sessionsSvc = null
+    var lastGuiActive = null
+    var lastManualAt = 0
+    var MANUAL_IMMUNITY_MS = 8000
+    function currentGuiActive() {
+      try {
+        if (!sessionsSvc || !sessionsSvc.list || typeof sessionsSvc.list.getSnapshot !== 'function') return null
+        var snap = sessionsSvc.list.getSnapshot()
+        return snap && typeof snap.current === 'string' && snap.current ? snap.current : null
+      } catch (e) { return null }
+    }
+    function sessionInList(id) { return !!(id && state.sessions.some(function (s) { return s.sessionId === id })) }
+    function mostRecentActive(withinMs) {
+      var cutoff = Date.now() - (withinMs || 30000)
+      var best = null
+      for (var i = 0; i < state.sessions.length; i++) {
+        var s = state.sessions[i]
+        if (s.lastActivityAt >= cutoff && (!best || s.lastActivityAt > best.lastActivityAt)) best = s
+      }
+      return best ? best.sessionId : null
+    }
+    function followActiveSession() {
+      try {
+        if (Date.now() - lastManualAt < MANUAL_IMMUNITY_MS) return null
+        var viaSvc = null
+        if (sessionsSvc) {
+          var cur = currentGuiActive()
+          if (cur) {
+            viaSvc = cur
+            var changed = cur !== lastGuiActive
+            lastGuiActive = cur
+            if (sessionInList(cur)) {
+              if (state.selected == null || changed) {
+                if (state.selected !== cur) { state.selected = cur; emit() }
+              }
+              return cur
+            }
+          }
+        }
+        var rec = mostRecentActive(30000)
+        if (rec && state.selected !== rec) { state.selected = rec; emit() }
+        return rec || viaSvc || null
+      } catch (e) { return null }
+    }
+
     function loadJson(key, fb) { try { var raw = localStorage.getItem(key); if (raw) { var v = JSON.parse(raw); if (v && typeof v === 'object') return v } } catch (e) {} return fb }
     function saveJson(key, value) { try { localStorage.setItem(key, JSON.stringify(value)) } catch (e) {} }
 
@@ -196,6 +244,7 @@ window.__ModuleLoader__.load({
     var pollTimer = null
     async function pollOnce() {
       try {
+        followActiveSession()
         var q = state.selected ? '?sessionId=' + encodeURIComponent(state.selected) : ''
         var res = await fetch('/api/anchored-monitor/overview' + q, { cache: 'no-store' })
         var j = await res.json()
@@ -316,6 +365,7 @@ window.__ModuleLoader__.load({
     // ───────────────────────── apply ─────────────────────────
     function apply(ctx) {
       var slots = ctx.slots
+      try { sessionsSvc = ctx.sessions || null } catch (e) { sessionsSvc = null }
       try {
         slots.inject('sidebar.footer.action', function () {
           return slots.register({ name: 'sidebar.footer.action', id: 'anchored-monitor', order: 40, label: TEXTS.title }, function () { return h(SidebarButton) })
@@ -331,6 +381,12 @@ window.__ModuleLoader__.load({
           return slots.register({ name: 'settings.section', id: 'anchored-monitor', order: 30, label: TEXTS.title }, function (props) { return h(SettingsPage, { close: props && props.close }) })
         })
       } catch (e) { console.warn('[dsh-anchored-monitor] settings slot failed', e) }
+      // 订阅 GUI 会话切换: 活跃对话变化立即跟随(面板/悬浮条随之切换)
+      try {
+        if (sessionsSvc && sessionsSvc.list && typeof sessionsSvc.list.subscribe === 'function') {
+          sessionsSvc.list.subscribe(function () { followActiveSession() })
+        }
+      } catch (e) { /* sessions 服务不可用则退化为固定会话 */ }
       startPolling()
       startUpdatePoll()
       console.log('[dsh-anchored-monitor] client ready: sidebar entry + liquid-glass overlay + rheostat bar + settings page')
