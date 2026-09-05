@@ -68,9 +68,8 @@
         + '<span class="am-chip" data-am="statuschip">—</span>'
         + '</div>'
         + '<div class="am-panel-sub">'
-        + (state.sessions.length > 1
-            ? '<button class="am-ssel am-ssel-idle" data-am="ssel" title="' + esc(T('切换对话', 'Switch conversation')) + '"><span class="am-ssel-label" data-am="ssel-label">' + esc(state.selected ? shortId(state.selected) : '—') + '</span><span class="am-ssel-caret">▾</span></button>'
-            : '<span class="am-sub-note" data-am="subnote"></span>')
+        + '<button class="am-ssel am-ssel-idle" data-am="ssel" title="' + esc(T('切换对话', 'Switch conversation')) + '"><span class="am-ssel-label" data-am="ssel-label">' + esc(state.selected ? sessionLabel(summaryOf(state.selected), state.selected) : (state.sessions[0] ? sessionLabel(state.sessions[0], state.sessions[0].sessionId) : '—')) + '</span><span class="am-ssel-caret">▾</span></button>'
+        + (state.sessions.length === 0 ? '<span class="am-sub-note" data-am="subnote"></span>' : '')
         + '<div class="am-panel-actions">'
         + '<button class="am-btn am-iv-switch am-iv-on" data-am="ivtoggle" title="' + esc(TEXTS.ivSwitchTitle) + '"></button>'
         + '<button class="am-btn am-btn-ico" data-am="lang" title="' + esc(TEXTS.switchLang) + '">' + (langZh ? 'EN' : '中') + '</button>'
@@ -149,7 +148,7 @@
         sselBtn.className = scls
         sselBtn.title = stt
         var sselLbl = panelEl.querySelector('[data-am=ssel-label]')
-        if (sselLbl) sselLbl.textContent = state.selected ? shortId(state.selected) : (state.sessions[0] ? shortId(state.sessions[0].sessionId) : '—')
+        if (sselLbl) sselLbl.textContent = state.selected ? sessionLabel(summaryOf(state.selected), state.selected) : (state.sessions[0] ? sessionLabel(state.sessions[0], state.sessions[0].sessionId) : '—')
       }
       var ivToggle = panelEl.querySelector('[data-am=ivtoggle]')
       if (ivToggle) {
@@ -527,11 +526,14 @@
             var meta = []
             if (s.band && s.band !== 'unknown') meta.push(s.band)
             if (s.normalizedScore != null) meta.push(Number(s.normalizedScore).toFixed(1))
-            return '<button class="am-ssel-item' + cur + '" role="option" data-id="' + esc(s.sessionId) + '" title="' + esc(s.sessionId) + '">'
-              + '<span class="am-ssel-id">' + esc(shortId(s.sessionId)) + '</span>'
+            return '<button class="am-ssel-item' + cur + '" role="option" data-id="' + esc(s.sessionId) + '" title="' + esc(s.sessionId + (s.workspace ? '\n' + s.workspace : '')) + '">'
+              + '<span class="am-ssel-id">' + esc(sessionLabel(s, s.sessionId)) + '</span>'
               + '<span class="am-ssel-meta am-mono">' + esc(meta.join(' · ')) + '</span></button>'
           }).join('')
-          sselPop.innerHTML = items || '<div class="am-ssel-empty">' + esc(T('暂无会话数据', 'no sessions yet')) + '</div>'
+          var hint = (items && state.sessions.length < 2)
+            ? '<div class="am-ssel-empty">' + esc(T('仅此一个会话;打开/使用其他对话产生思维链后会自动收录', 'only this one; other conversations appear once they produce reasoning')) + '</div>'
+            : ''
+          sselPop.innerHTML = (items || '<div class="am-ssel-empty">' + esc(T('暂无会话数据', 'no sessions yet')) + '</div>') + hint
           sselPop.addEventListener('click', function (e2) {
             var b = e2.target && e2.target.closest ? e2.target.closest('[data-id]') : null
             if (!b) return

@@ -63,7 +63,7 @@
       '.am-panel-title svg{color:var(--am-blue);flex:none}',
       '.am-title-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.am-panel-sub{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden}',
-      '.am-ssel-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}',
+      '.am-ssel-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}',
       '.am-ssel-idle{border-color:var(--am-border-strong,rgba(128,128,128,.35))}',
       '.am-ssel-follow{border-color:rgba(77,107,254,.75);box-shadow:0 0 0 2px rgba(77,107,254,.18);color:var(--am-blue,#4d6bfe)}',
       '.am-ssel-manual{border-color:rgba(217,119,6,.5)}',
@@ -335,7 +335,7 @@
         barEl.title = TEXTS.title + ' · ' + TEXTS.monitorOnline
       }
       var curSes = state.selected || currentGuiActive()
-      if (curSes) barEl.title += ' · ' + shortId(curSes)
+      if (curSes) barEl.title += ' · ' + sessionLabel(summaryOf(curSes), curSes)
       updateTickerOnly()
     }
     function updateTickerOnly() {

@@ -59,6 +59,8 @@ interface InterventionRecord {
 
 interface SessionState {
   sessionId: string
+  workspace?: string
+  title?: string
   source: 'log_tail' | 'ipc_push'
   startedAt: number
   lastActivityAt: number
@@ -198,6 +200,8 @@ export class SessionManager {
     state.blockCount += 1
     state.lastActivityAt = Date.now()
     state.lastReasoningAt = Date.now()
+    if (block.workspace !== undefined) state.workspace = block.workspace
+    if (block.title !== undefined) state.title = block.title
 
     this.opts.emit({
       type: 'block_received',
@@ -427,6 +431,8 @@ export class SessionManager {
     state.textChars += block.text.length
     state.lastTextAt = Date.now()
     state.lastActivityAt = state.lastTextAt
+    if (block.workspace !== undefined) state.workspace = block.workspace
+    if (block.title !== undefined) state.title = block.title
     const maxSample = Math.max(cfg.text_surge_chars, 2000)
     state.textSample = (state.textSample + block.text).slice(-maxSample)
     const now = Date.now()
@@ -562,6 +568,8 @@ export class SessionManager {
       const last = s.history[s.history.length - 1]
       out.push({
         sessionId: s.sessionId,
+        workspace: s.workspace,
+        title: s.title,
         phase: s.phase,
         blockCount: s.blockCount,
         lastSequence: s.lastSequence,

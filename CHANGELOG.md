@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-05
+
+### Added
+
+- **Readable conversation labels everywhere** - sessions are no longer shown as bare id+hash combos. The host now attaches each session's workspace (from session.header.cwd) to every push; the monitor stores it per session and serves it in /api/sessions; both frontends resolve a human label per conversation - GUI title (when available) > monitor title > workspace folder name > short id.
+- **Panel / floating bar / dropdown / event feed** all display the label (raw id stays in tooltips); session-start/end feed lines drop the noisy config hash.
+
+### Fixed
+
+- The dashboard session list shows workspace + phase instead of a bare UUID line, with full id + workspace in the row tooltip.
+- **Subagent sessions are excluded from monitoring** - sessions created for subagents (session.header.parentSession set) are no longer pushed at all (stream buffer, block push and text push all gated), so the panel/sidebar stops filling with subagent UUIDs; the auto-follow logic only follows conversations that exist in the GUI's main session list.
 ## [0.3.0] - 2026-08-19
 
 ### Added

@@ -26,6 +26,13 @@ const PHASE_NOTE = {
 const fmtTime = (ts) => new Date(ts).toLocaleTimeString('zh-CN', { hour12: false })
 const fmtFull = (ts) => new Date(ts).toLocaleString('zh-CN', { hour12: false })
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const wsBase = (w) => { if (!w) return ''; const s2 = String(w).replace(/\\/g, '/').replace(/\/+$/, ''); const i2 = s2.lastIndexOf('/'); return i2 >= 0 ? s2.slice(i2 + 1) : s2 }
+const sessionLabelOf = (s) => {
+  if (!s) return ''
+  if (s.title && String(s.title).trim()) return String(s.title).trim()
+  if (s.workspace && String(s.workspace).trim()) return wsBase(s.workspace)
+  return s.sessionId
+}
 
 async function api(path, opts) {
   const res = await fetch(path, opts)
@@ -55,10 +62,12 @@ function renderSessionList() {
     const band = s.band || 'unknown'
     const phase = s.phase || 'healthy'
     const score = s.normalizedScore === null ? '—' : s.normalizedScore.toFixed(1)
-    return `<button class="session-item ${active}" data-id="${esc(s.sessionId)}">
-      <span class="session-id">${esc(s.sessionId)}</span>
+    const label = sessionLabelOf(s)
+    const wsTag = (s.workspace && String(s.workspace).trim()) ? wsBase(s.workspace) + ' · ' : ''
+    return `<button class="session-item ${active}" data-id="${esc(s.sessionId)}" title="${esc(s.sessionId + (s.workspace ? '\\n' + s.workspace : ''))}">
+      <span class="session-id">${esc(label)}</span>
       <span class="session-meta">
-        <span><i class="band-dot band-${esc(band)}"></i>${esc(band)} · ${esc(phase)}</span>
+        <span><i class="band-dot band-${esc(band)}"></i>${esc(wsTag + phase)}</span>
         <span class="mono">${score}</span>
       </span>
     </button>`
@@ -495,9 +504,9 @@ function feedLabel(evt) {
     case 'guard_triggered':
       return { kind: 'guard', cls: 'k-guard', text: (state.sessions.length > 1 ? shortId(evt.sessionId) + ' ' : '') + (evt.guard === 'text_leak' ? '🧠 CoT 泄漏' : '⏸ CoT 停摆') + ' · ' + evt.detail }
     case 'session_start':
-      return { kind: 'session', cls: 'k-session', text: '会话启动 ' + shortId(evt.sessionId) + ' · ' + evt.configHash }
+      return { kind: 'session', cls: 'k-session', text: '会话启动 ' + sessionLabelOf(state.sessions.find((x) => x.sessionId === evt.sessionId) || null) }
     case 'session_end':
-      return { kind: 'session', cls: 'k-session', text: '会话结束 ' + shortId(evt.sessionId) + ' · ' + evt.reason }
+      return { kind: 'session', cls: 'k-session', text: '会话结束 ' + sessionLabelOf(state.sessions.find((x) => x.sessionId === evt.sessionId) || null) + ' · ' + evt.reason }
     default:
       return null
   }

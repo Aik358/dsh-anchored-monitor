@@ -249,7 +249,9 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
             text,
             sequence: typeof body.sequence === 'number' ? body.sequence : 0,
             timestamp: typeof body.timestamp === 'number' ? body.timestamp : Date.now(),
-            source: 'ipc' as const
+            source: 'ipc' as const,
+            workspace: typeof body.workspace === 'string' ? body.workspace : undefined,
+            title: typeof body.title === 'string' ? body.title : undefined
           }
           opts.manager.ingest(block)
           return json(res, 200, { ok: true, sessionId })
@@ -266,7 +268,9 @@ export async function startServer(opts: StartServerOptions): Promise<MonitorServ
             text,
             sequence: typeof body.sequence === 'number' ? body.sequence : 0,
             timestamp: typeof body.timestamp === 'number' ? body.timestamp : Date.now(),
-            source: 'ipc' as const
+            source: 'ipc' as const,
+            workspace: typeof body.workspace === 'string' ? body.workspace : undefined,
+            title: typeof body.title === 'string' ? body.title : undefined
           }
           opts.manager.ingestText(chunk)
           return json(res, 200, { ok: true, sessionId })

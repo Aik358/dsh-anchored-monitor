@@ -162,6 +162,15 @@ window.__ModuleLoader__.load({
       } catch (e) { return null }
     }
     function sessionInList(id) { return !!(id && state.sessions.some(function (s) { return s.sessionId === id })) }
+    // 是否 GUI 主会话列表中的会话(不在 byId 的一律视为 subagent/旁支, 不参与自动跟随)
+    function guiMainId(id) {
+      try {
+        if (!sessionsSvc || !sessionsSvc.list || typeof sessionsSvc.list.getSnapshot !== 'function') return true
+        var snap = sessionsSvc.list.getSnapshot()
+        if (snap && snap.byId) return !!snap.byId[id]
+        return true
+      } catch (e) { return true }
+    }
     function mostRecentActive(withinMs) {
       var cutoff = Date.now() - (withinMs || 30000)
       var best = null
@@ -181,7 +190,7 @@ window.__ModuleLoader__.load({
             viaSvc = cur
             var changed = cur !== lastGuiActive
             lastGuiActive = cur
-            if (sessionInList(cur)) {
+            if (sessionInList(cur) && guiMainId(cur)) {
               if (state.selected == null || changed) {
                 if (state.selected !== cur) { state.selected = cur; emit() }
               }
@@ -237,6 +246,35 @@ window.__ModuleLoader__.load({
       })
     }
     function shortId(id) { var s = String(id || ''); return s.length > 14 ? s.slice(0, 13) + '…' : s }
+    function wsBase(w) {
+      if (!w) return ''
+      var s = String(w).replace(/\\/g, '/').replace(/\/+$/, '')
+      var i = s.lastIndexOf('/')
+      return i >= 0 ? s.slice(i + 1) : s
+    }
+    function guiSessionInfo(id) {
+      try {
+        if (!sessionsSvc || !sessionsSvc.list || typeof sessionsSvc.list.getSnapshot !== 'function') return null
+        var snap = sessionsSvc.list.getSnapshot()
+        return snap && snap.byId ? (snap.byId[id] || null) : null
+      } catch (e) { return null }
+    }
+    function summaryOf(id) {
+      for (var i = 0; i < state.sessions.length; i++) if (state.sessions[i].sessionId === id) return state.sessions[i]
+      return null
+    }
+    // 会话可读标签: GUI 标题 > 监控标题 > GUI 工作区 > 监控工作区 > 短 id
+    function sessionLabel(s, id) {
+      var sid = id || (s && s.sessionId) || state.selected
+      if (!sid) return '—'
+      var g = guiSessionInfo(sid)
+      var sv = s || summaryOf(sid)
+      if (g && g.title && String(g.title).trim()) return String(g.title).trim()
+      if (sv && sv.title && String(sv.title).trim()) return String(sv.title).trim()
+      if (g && g.cwd && String(g.cwd).trim()) return wsBase(g.cwd)
+      if (sv && sv.workspace && String(sv.workspace).trim()) return wsBase(sv.workspace)
+      return shortId(sid)
+    }
     function fmtTime(ts) { var d = new Date(ts); var p = function (n) { return (n < 10 ? '0' : '') + n }; return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) }
 
     // ───────────────────────── 数据轮询 ─────────────────────────
@@ -306,8 +344,8 @@ window.__ModuleLoader__.load({
         case 'intervention_triggered': return e.level + ' #' + e.sequence + ' · ' + e.reason
         case 'ack_received': return e.level + ' ✓'
         case 'guard_triggered': return (e.guard === 'text_leak' ? '🧠 ' + TEXTS.cotLeak : '⏸ ' + TEXTS.cotStall) + ' · ' + e.detail
-        case 'session_start': return T('会话启动', 'Session start') + ' · ' + shortId(e.sessionId)
-        case 'session_end': return T('会话结束', 'Session end') + ' · ' + e.reason
+        case 'session_start': return T('会话启动', 'Session start') + ' · ' + sessionLabel(summaryOf(e.sessionId), e.sessionId)
+        case 'session_end': return T('会话结束', 'Session end') + ' · ' + sessionLabel(summaryOf(e.sessionId), e.sessionId) + (e.reason ? ' · ' + e.reason : '')
         default: return null
       }
     }

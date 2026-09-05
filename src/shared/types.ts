@@ -10,6 +10,8 @@ export interface ReasoningBlock {
   sequence: number          // 会话内递增序号
   text: string              // 原始 reasoning 文本
   source: 'log' | 'ipc' | 'replay' | 'demo'
+  workspace?: string        // 会话工作目录(用于可读标签)
+  title?: string            // 会话标题(可读标签优先用)
 }
 
 /** 一个 text 信道块(可见正文的流式增量)——供 CoT 泄漏/停摆守卫消费 */
@@ -19,6 +21,8 @@ export interface TextChunkBlock {
   sequence: number          // 会话内独立的 text 序号(与 reasoning 序号互补成双通道计数)
   text: string              // text 增量文本
   source: 'ipc'
+  workspace?: string
+  title?: string
 }
 
 /** 特征向量: 所有特征均可配置 */
@@ -360,6 +364,8 @@ export interface SessionSnapshot {
 /** 仪表盘 /api/sessions 的会话摘要 */
 export interface SessionSummary {
   sessionId: string
+  workspace?: string
+  title?: string
   phase: Phase
   blockCount: number
   lastSequence: number
