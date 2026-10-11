@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Intervention master switch always rendered as OFF** - the panel's `state` object and `pollOnce()` never carried `interventionsEnabled` from `/api/overview`, so the header toggle read `undefined` and displayed the disabled label no matter what the monitor actually had. It also made the toggle a no-op in one direction: clicking it computed `!undefined === true` and re-sent `enabled: true` even when interventions were already running. The field is now initialized (`state.interventionsEnabled = true`) and refreshed every poll (`j.interventionsEnabled !== false`), so the label, the "monitor-only" suffix and the click behaviour all match the monitor.
+
 ## [0.3.1] - 2026-09-05
 
 ### Added
